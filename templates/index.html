@@ -224,6 +224,77 @@ tr:hover td{background:#ffffff06}
 .status-TIME_WAIT{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
 .status-CLOSE_WAIT{background:#ef444422;color:#ef4444;border:1px solid #ef444444}
 
+/* ── sysinfo ── */
+.si-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-bottom:14px}
+.si-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.si-card-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;
+              background:linear-gradient(90deg,var(--surface2),var(--surface))}
+.si-card-head .icon{font-size:1rem}
+.si-card-head h4{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:500}
+.si-card-body{padding:14px 16px}
+.si-row{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid #ffffff05}
+.si-row:last-child{border-bottom:none}
+.si-key{font-size:.7rem;color:var(--muted);flex-shrink:0;width:140px}
+.si-val{font-size:.78rem;color:var(--text);font-family:monospace;word-break:break-all;flex:1}
+.si-val.accent{color:var(--accent);font-weight:600}
+.si-val.green{color:var(--green);font-weight:600}
+.si-val.yellow{color:var(--yellow)}
+.si-val.red{color:var(--red)}
+.si-bar-row{margin:6px 0}
+.si-bar-lbl{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-bottom:3px}
+.si-bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.si-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.si-badge{display:inline-block;padding:1px 8px;border-radius:8px;font-size:.65rem;font-weight:600}
+.si-temp-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #ffffff05}
+.si-temp-item:last-child{border-bottom:none}
+.si-disk-item{margin-bottom:10px}
+.si-disk-item:last-child{margin-bottom:0}
+
+/* ── remote ── */
+.rm-layout{display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start}
+.rm-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px}
+.rm-panel h3{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.rm-host-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+              padding:10px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px}
+.rm-host-card:hover{border-color:var(--accent);background:var(--glow)}
+.rm-host-card.active{border-color:var(--green);background:#22c55e0d}
+.rm-host-icon{font-size:1.2rem;flex-shrink:0}
+.rm-host-info{flex:1;min-width:0}
+.rm-host-name{font-size:.82rem;font-weight:600}
+.rm-host-addr{font-size:.68rem;color:var(--muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rm-field{margin-bottom:10px}
+.rm-field label{display:block;font-size:.68rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.rm-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+          padding:7px 10px;border-radius:7px;font-size:.78rem}
+.rm-input:focus{outline:none;border-color:var(--accent)}
+.rm-status-bar{border-radius:10px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:.82rem}
+.rm-status-bar.disconnected{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.rm-status-bar.connecting{background:#f59e0b12;border:1px solid #f59e0b44;color:#f59e0b}
+.rm-status-bar.connected{background:#22c55e0d;border:1px solid #22c55e44;color:#22c55e}
+.rm-status-bar.error{background:#ef444412;border:1px solid #ef444444;color:#ef4444}
+.rm-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.rm-dot.disconnected{background:var(--border)}
+.rm-dot.connecting{background:#f59e0b;animation:pulse 1s infinite}
+.rm-dot.connected{background:#22c55e}
+.rm-dot.error{background:#ef4444}
+.rm-terminal{background:#0a0e18;border:1px solid var(--border);border-radius:8px;
+             padding:14px;font-family:'Cascadia Code','Consolas',monospace;font-size:.73rem;
+             color:#a8d8a0;min-height:180px;max-height:340px;overflow-y:auto;line-height:1.6;
+             white-space:pre-wrap;word-break:break-all}
+.rm-terminal .t-info{color:#5a7090}
+.rm-terminal .t-ok{color:#22c55e}
+.rm-terminal .t-warn{color:#f59e0b}
+.rm-terminal .t-err{color:#ef4444}
+.rm-terminal .t-upload{color:#4f9eff}
+.rm-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.rm-deploy-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-top:14px}
+.rm-monintion-status{display:flex;align-items:center;gap:10px;padding:10px 14px;
+                     background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:.8rem}
+.rm-cmd-row{display:flex;gap:8px;margin-top:10px}
+#rm-cmd-input{flex:1;background:#0a0e18;border:1px solid var(--border);color:#a8d8a0;
+              padding:6px 12px;border-radius:7px;font-family:monospace;font-size:.76rem}
+#rm-cmd-input:focus{outline:none;border-color:var(--accent)}
+
 /* ── apps ── */
 .ap-stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
 .ap-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;
@@ -266,6 +337,8 @@ tr:hover td{background:#ffffff06}
     <div class="nav-section">Sistema</div>
     <div class="nav-item" onclick="goto('apps')"><span class="nav-icon">📦</span>Aplicativos</div>
     <div class="nav-item" onclick="goto('network')"><span class="nav-icon">🌐</span>Redes</div>
+    <div class="nav-item" onclick="goto('sysinfo')"><span class="nav-icon">🖥️</span>Info do Sistema</div>
+    <div class="nav-item" onclick="goto('remote')"><span class="nav-icon">🔗</span>Acesso Remoto</div>
   </nav>
   <div id="sidebar-status"><span class="status-dot"></span><span id="last-update">Conectando...</span></div>
 </aside>
@@ -510,6 +583,102 @@ tr:hover td{background:#ffffff06}
 
     </div>
 
+    <!-- ════ SYSINFO ════ -->
+    <div id="page-sysinfo" class="page">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div id="si-headline" style="font-size:.78rem;color:var(--muted)">Carregando…</div>
+        <button class="btn btn-ghost" onclick="siLoad()" style="font-size:.75rem">↺ Atualizar</button>
+      </div>
+      <div id="si-content"></div>
+    </div>
+
+    <!-- ════ REMOTE ════ -->
+    <div id="page-remote" class="page">
+      <div class="rm-layout">
+
+        <!-- left: hosts + form -->
+        <div>
+          <div class="rm-panel" style="margin-bottom:14px">
+            <h3>Hosts salvos</h3>
+            <div id="rm-host-list"></div>
+            <button class="btn btn-ghost" style="width:100%;margin-top:6px;font-size:.76rem" onclick="rmShowAddHost()">+ Adicionar host</button>
+          </div>
+
+          <!-- add/edit form -->
+          <div class="rm-panel" id="rm-form-panel">
+            <h3 id="rm-form-title">Novo host</h3>
+            <div class="rm-field"><label>Label</label><input class="rm-input" id="rm-f-label" placeholder="ex: Raspberry Pi"></div>
+            <div class="rm-field"><label>Ícone</label>
+              <select class="rm-input" id="rm-f-icon">
+                <option value="🖥️">🖥️ Servidor</option>
+                <option value="🍓">🍓 Raspberry Pi</option>
+                <option value="🐉">🐉 Kali Linux</option>
+                <option value="☁️">☁️ Cloud</option>
+                <option value="🖱️">🖱️ Desktop</option>
+              </select>
+            </div>
+            <div class="rm-field"><label>Host / IP</label><input class="rm-input" id="rm-f-host" placeholder="192.168.1.x ou hostname"></div>
+            <div class="rm-field"><label>Porta</label><input class="rm-input" id="rm-f-port" placeholder="22" value="22"></div>
+            <div class="rm-field"><label>Usuário</label><input class="rm-input" id="rm-f-user" placeholder="pi / root / kali"></div>
+            <div class="rm-field"><label>Senha</label><input class="rm-input" id="rm-f-pass" type="password" placeholder="(deixe vazio para usar chave SSH)"></div>
+            <div class="rm-field"><label>Caminho da chave SSH (opcional)</label><input class="rm-input" id="rm-f-key" placeholder="~/.ssh/id_rsa"></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary" style="flex:1" onclick="rmSaveHost()">Salvar</button>
+              <button class="btn btn-ghost" onclick="rmHideForm()">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- right: connection + terminal -->
+        <div>
+          <!-- status bar -->
+          <div id="rm-status-bar" class="rm-status-bar disconnected">
+            <div class="rm-dot disconnected" id="rm-dot"></div>
+            <span id="rm-status-text">Sem conexão ativa</span>
+            <button class="btn btn-ghost" id="rm-btn-disconnect" style="margin-left:auto;display:none;padding:3px 10px;font-size:.73rem" onclick="rmDisconnect()">Desconectar</button>
+          </div>
+
+          <!-- session uname -->
+          <div id="rm-uname" style="display:none;font-size:.7rem;color:var(--muted);font-family:monospace;
+               background:var(--surface2);padding:6px 14px;border-radius:6px;margin-bottom:10px"></div>
+
+          <!-- deploy section (shown when connected) -->
+          <div id="rm-deploy-section" class="rm-deploy-section" style="display:none">
+            <h3 style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">MONINTION no host remoto</h3>
+            <div class="rm-monintion-status" id="rm-mon-status">
+              <span id="rm-mon-dot" style="width:9px;height:9px;border-radius:50%;background:var(--border);flex-shrink:0"></span>
+              <span id="rm-mon-text">Verificando…</span>
+              <button class="btn btn-ghost" style="margin-left:auto;padding:2px 9px;font-size:.7rem" onclick="rmCheckMonintion()">↺ Checar</button>
+            </div>
+            <div style="font-size:.78rem;color:var(--muted2);margin-bottom:12px;line-height:1.6">
+              O deploy envia os arquivos do MONINTION via SFTP e inicia o servidor remoto na porta 5050, permitindo monitorar aquele dispositivo.
+            </div>
+            <div class="rm-actions">
+              <button class="btn btn-primary" id="rm-btn-deploy" onclick="rmDeploy()">🚀 Deploy MONINTION</button>
+              <button class="btn btn-ghost" id="rm-btn-open" style="display:none" onclick="rmOpenRemote()">🔗 Abrir MONINTION remoto</button>
+            </div>
+          </div>
+
+          <!-- terminal -->
+          <div style="margin-top:14px">
+            <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+              Terminal
+              <button class="btn btn-ghost" style="padding:2px 8px;font-size:.68rem" onclick="rmClearTerm()">Limpar</button>
+            </div>
+            <div class="rm-terminal" id="rm-terminal">Aguardando conexão…
+</div>
+            <!-- command input -->
+            <div class="rm-cmd-row" id="rm-cmd-row" style="display:none">
+              <span style="font-size:.78rem;color:#5a7090;padding:6px 0;font-family:monospace">$</span>
+              <input id="rm-cmd-input" placeholder="comando remoto…" onkeydown="if(event.key==='Enter')rmExecCmd()">
+              <button class="btn btn-ghost" style="padding:5px 12px;font-size:.76rem" onclick="rmExecCmd()">↵</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- ════ NETWORK ════ -->
     <div id="page-network" class="page">
 
@@ -570,6 +739,81 @@ tr:hover td{background:#ffffff06}
           <tbody id="net-conn-tbody"></tbody>
         </table>
         <div id="net-conn-empty" class="empty-state" style="display:none">Nenhuma conexão encontrada.</div>
+      </div>
+
+      <!-- PORT SCANNER -->
+      <div style="margin-top:22px">
+        <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">🔍 Varredura de Portas</div>
+        <div class="chart-card" style="padding:18px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+            <div>
+              <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Host / IP</div>
+              <input id="ps-host" type="text" value="127.0.0.1"
+                style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
+                       padding:7px 12px;border-radius:8px;font-size:.78rem;width:200px;font-family:monospace">
+            </div>
+            <div>
+              <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Porta inicial</div>
+              <input id="ps-from" type="number" value="1" min="1" max="65535"
+                style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
+                       padding:7px 10px;border-radius:8px;font-size:.78rem;width:90px">
+            </div>
+            <div>
+              <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Porta final</div>
+              <input id="ps-to" type="number" value="1024" min="1" max="65535"
+                style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
+                       padding:7px 10px;border-radius:8px;font-size:.78rem;width:90px">
+            </div>
+            <div>
+              <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Timeout (s)</div>
+              <select id="ps-timeout"
+                style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
+                       padding:7px 10px;border-radius:8px;font-size:.78rem">
+                <option value="0.3">0.3s (rápido)</option>
+                <option value="0.5" selected>0.5s</option>
+                <option value="1">1s (preciso)</option>
+                <option value="2">2s (lento)</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;padding-bottom:0">
+              <button class="btn btn-ghost" onclick="psScanPreset('common')">Comuns</button>
+              <button class="btn btn-ghost" onclick="psScanPreset('web')">Web</button>
+              <button class="btn btn-ghost" onclick="psScanPreset('full')">1–10k</button>
+              <button class="btn btn-primary" id="ps-btn" onclick="psScan()">▶ Escanear</button>
+            </div>
+          </div>
+
+          <!-- progress -->
+          <div id="ps-progress" style="display:none;margin-bottom:12px">
+            <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px" id="ps-progress-lbl">Escaneando…</div>
+            <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+              <div id="ps-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width .3s"></div>
+            </div>
+          </div>
+
+          <!-- results -->
+          <div id="ps-results" style="display:none">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+              <div id="ps-summary" style="font-size:.78rem;color:var(--muted2)"></div>
+              <input id="ps-filter" type="text" placeholder="Filtrar porta ou serviço…"
+                style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);
+                       color:var(--text);padding:5px 10px;border-radius:7px;font-size:.75rem;width:200px"
+                oninput="psRender()">
+            </div>
+            <div class="fb-table-wrap">
+              <table>
+                <thead><tr>
+                  <th style="width:100px">Porta</th>
+                  <th>Serviço</th>
+                  <th style="width:120px">Status</th>
+                  <th style="width:160px">Risco</th>
+                </tr></thead>
+                <tbody id="ps-tbody"></tbody>
+              </table>
+              <div id="ps-empty" class="empty-state" style="display:none">Nenhuma porta aberta encontrada.</div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -645,7 +889,7 @@ function sliderToBytes(v){return Math.pow(v/100,3)*1024*1024*1024}
 // ══════════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════════════════════════════
-const PAGE_TITLES={'overview':'Visão Geral','history':'Histórico','files':'Explorador de Arquivos','cleaner':'Limpeza do Sistema','apps':'Aplicativos Instalados','network':'Redes & Conexões'};
+const PAGE_TITLES={'overview':'Visão Geral','history':'Histórico','files':'Explorador de Arquivos','cleaner':'Limpeza do Sistema','apps':'Aplicativos Instalados','network':'Redes & Conexões','sysinfo':'Informações do Sistema','remote':'Acesso Remoto SSH'};
 
 function goto(name){
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
@@ -656,8 +900,10 @@ function goto(name){
   if(name==='files'&&!fbData) fbNavigate('C:\\');
   if(name==='history'){loadDiskHistory();loadRamHistory();loadCpuHistory();}
   if(name==='apps'&&!apData) apLoad();
+  if(name==='sysinfo') siLoad();
   if(name==='network') netStart();
   if(name!=='network') netStop();
+  if(name==='remote') rmInit();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1307,6 +1553,537 @@ function cdmRender() {
     `${cdmData.total_val} ${cdmData.total_unit} total · ${cdmData.count} arquivos`;
   document.getElementById('cdm-count').textContent =
     `${items.length} arquivo${items.length!==1?'s':''} visíveis · ${v} ${u}`;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// SYSINFO
+// ══════════════════════════════════════════════════════════════════════
+async function siLoad() {
+  document.getElementById('si-headline').textContent = 'Carregando…';
+  document.getElementById('si-content').innerHTML =
+    '<div class="loading">Coletando informações do sistema…</div>';
+  try {
+    const d = await fetch('/api/sysinfo').then(r => r.json());
+    siRender(d);
+  } catch(e) {
+    document.getElementById('si-content').innerHTML =
+      `<div class="empty-state" style="color:var(--red)">Erro: ${e}</div>`;
+  }
+}
+
+function siRow(key, val, cls='') {
+  return `<div class="si-row"><span class="si-key">${key}</span><span class="si-val ${cls}">${val}</span></div>`;
+}
+function siBar(label, val, max, color) {
+  const pct = Math.min(100, Math.round(val / max * 100));
+  const c   = color || (pct < 60 ? '#22c55e' : pct < 85 ? '#f59e0b' : '#ef4444');
+  return `<div class="si-bar-row">
+    <div class="si-bar-lbl"><span>${label}</span><span>${pct}%</span></div>
+    <div class="si-bar-bg"><div class="si-bar-fill" style="width:${pct}%;background:${c}"></div></div>
+  </div>`;
+}
+function siCard(icon, title, body) {
+  return `<div class="si-card">
+    <div class="si-card-head"><span class="icon">${icon}</span><h4>${title}</h4></div>
+    <div class="si-card-body">${body}</div>
+  </div>`;
+}
+
+function siRender(d) {
+  document.getElementById('si-headline').innerHTML =
+    `<b style="color:var(--text)">${d.hostname}</b> &nbsp;·&nbsp; ${d.os.system} ${d.os.release} &nbsp;·&nbsp; Uptime: <b style="color:var(--accent)">${d.uptime}</b> &nbsp;·&nbsp; ${d.process_count} processos`;
+
+  // ── OS ──
+  const osBody = [
+    siRow('Hostname',   d.hostname, 'accent'),
+    siRow('Sistema',    `${d.os.system} ${d.os.release}`),
+    siRow('Versão',     d.os.version.slice(0,60) + (d.os.version.length>60?'…':'')),
+    siRow('Arquitetura',d.os.machine),
+    siRow('Plataforma', d.platform.slice(0,60)),
+    siRow('Python',     d.python),
+    siRow('Boot em',    d.boot_time),
+    siRow('Uptime',     d.uptime, 'green'),
+    siRow('Processos',  d.process_count),
+  ].join('');
+
+  // ── CPU ──
+  const cpu = d.cpu;
+  const cpuBody = [
+    siRow('Processador', d.os.processor || '—'),
+    siRow('Cores físicos', cpu.physical_cores),
+    siRow('Cores lógicos', cpu.logical_cores),
+    siRow('Freq. atual',   cpu.freq_current ? cpu.freq_current + ' MHz' : '—', 'accent'),
+    siRow('Freq. mín/máx', cpu.freq_min && cpu.freq_max ? `${cpu.freq_min} / ${cpu.freq_max} MHz` : '—'),
+    siRow('Context switches', cpu.ctx_switches.toLocaleString()),
+    siRow('Interrupções', cpu.interrupts.toLocaleString()),
+    siBar('Uso total',  cpu.percent,     100),
+    siBar('Usuário',    cpu.user_pct,    100, '#4f9eff'),
+    siBar('Sistema',    cpu.system_pct,  100, '#7c5cfc'),
+    siBar('Ocioso',     cpu.idle_pct,    100, '#22c55e'),
+  ].join('');
+
+  // ── RAM ──
+  const ram = d.ram;
+  const ramBody = [
+    siRow('Total',     ram.total_gb + ' GB', 'accent'),
+    siRow('Usado',     ram.used_gb + ' GB'),
+    siRow('Disponível',ram.available_gb + ' GB', 'green'),
+    ...(ram.buffers_gb > 0 ? [siRow('Buffers', ram.buffers_gb + ' GB')] : []),
+    ...(ram.cached_gb  > 0 ? [siRow('Cache',   ram.cached_gb  + ' GB')] : []),
+    siBar('Uso de RAM', ram.used_gb, ram.total_gb),
+  ].join('') + (() => {
+    if (!d.swap.total_gb) return '';
+    return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      ${siRow('Swap total', d.swap.total_gb + ' GB')}
+      ${siRow('Swap usado', d.swap.used_gb  + ' GB')}
+      ${siBar('Uso de Swap', d.swap.used_gb, d.swap.total_gb || 1, d.swap.percent > 50 ? '#f59e0b' : '#22c55e')}
+    </div>`;
+  })();
+
+  // ── Disks ──
+  const diskBody = d.disks.map(disk => {
+    const c = disk.percent < 60 ? '#22c55e' : disk.percent < 85 ? '#f59e0b' : '#ef4444';
+    return `<div class="si-disk-item">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:.78rem;font-weight:600;color:var(--text)">${disk.mountpoint}</span>
+        <span style="font-size:.72rem;color:var(--muted)">${disk.device} · ${disk.fstype}</span>
+      </div>
+      <div style="font-size:.7rem;color:var(--muted2);margin-bottom:4px">
+        ${disk.used_gb} GB usados de ${disk.total_gb} GB · ${disk.free_gb} GB livres
+      </div>
+      ${siBar('', disk.used_gb, disk.total_gb, c)}
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:.75rem">Sem dados de disco</div>';
+
+  // ── Network ──
+  const netBody = d.ifaces.map(i =>
+    `<div class="si-row">
+      <span class="si-key" style="display:flex;align-items:center;gap:5px">
+        <span style="width:7px;height:7px;border-radius:50%;background:${i.is_up?'#22c55e':'#ef4444'};flex-shrink:0"></span>
+        ${i.name}
+      </span>
+      <span class="si-val" style="font-family:monospace">${i.ip}<span style="color:var(--muted);font-size:.68rem"> / ${i.netmask}</span></span>
+    </div>`
+  ).join('') || siRow('Interfaces', 'Sem IPv4 configurado');
+
+  // ── Users ──
+  const usersBody = d.users.length
+    ? d.users.map(u => siRow(u.name, `${u.terminal || '—'} · desde ${u.started}`)).join('')
+    : siRow('Usuários ativos', 'Nenhum detectado');
+
+  // ── Temperature ──
+  let tempBody = '';
+  if (Object.keys(d.temps).length) {
+    for (const [sensor, entries] of Object.entries(d.temps)) {
+      entries.forEach(e => {
+        const c = e.current > (e.critical||90)*0.9 ? '#ef4444'
+                : e.current > (e.high||80)*0.85     ? '#f59e0b' : '#22c55e';
+        tempBody += `<div class="si-temp-item">
+          <span style="font-size:.7rem;color:var(--muted);flex:1">${e.label || sensor}</span>
+          <span style="font-size:.85rem;font-weight:700;color:${c}">${e.current.toFixed(1)} °C</span>
+          ${e.high ? `<span style="font-size:.65rem;color:var(--muted)">/ ${e.high}°</span>` : ''}
+        </div>`;
+      });
+    }
+  } else {
+    tempBody = '<div style="font-size:.73rem;color:var(--muted)">Sensores não disponíveis neste SO</div>';
+  }
+
+  // ── Battery ──
+  let batteryCard = '';
+  if (d.battery) {
+    const b   = d.battery;
+    const pct = b.percent;
+    const c   = pct > 50 ? '#22c55e' : pct > 20 ? '#f59e0b' : '#ef4444';
+    const mins = b.secs_left ? Math.round(b.secs_left/60) : null;
+    batteryCard = siCard('🔋','Bateria',
+      siRow('Carga', `${pct.toFixed(0)}%`, pct>50?'green':pct>20?'yellow':'red') +
+      siRow('Status', b.plugged ? '🔌 Carregando' : '🔋 Descarregando') +
+      (mins !== null ? siRow('Tempo restante', `${Math.floor(mins/60)}h ${mins%60}m`) : '') +
+      siBar('Nível de bateria', pct, 100, c)
+    );
+  }
+
+  document.getElementById('si-content').innerHTML = `
+    <div class="si-grid">
+      ${siCard('🖥️','Sistema Operacional', osBody)}
+      ${siCard('⚡','Processador (CPU)', cpuBody)}
+      ${siCard('🧠','Memória RAM', ramBody)}
+      ${siCard('🌐','Rede — IPv4', netBody)}
+      ${siCard('👤','Usuários Ativos', usersBody)}
+      ${siCard('🌡️','Temperatura', tempBody)}
+      ${batteryCard}
+    </div>
+    <div style="margin-bottom:14px">
+      ${siCard('💾','Armazenamento', diskBody)}
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// PORT SCANNER
+// ══════════════════════════════════════════════════════════════════════
+let psData = [];
+
+const PS_RISK = {
+  21:  {level:'alto',   note:'FTP — credenciais em texto puro'},
+  22:  {level:'médio',  note:'SSH — verificar versão e permissões'},
+  23:  {level:'crítico',note:'Telnet — sem criptografia, obsoleto'},
+  25:  {level:'médio',  note:'SMTP — pode ser relay aberto'},
+  80:  {level:'baixo',  note:'HTTP — sem TLS'},
+  110: {level:'médio',  note:'POP3 — considere IMAPS'},
+  143: {level:'médio',  note:'IMAP — considere IMAPS'},
+  443: {level:'baixo',  note:'HTTPS — verificar certificado'},
+  445: {level:'alto',   note:'SMB — alvo comum de ransomware'},
+  3306:{level:'alto',   note:'MySQL exposto — risco crítico'},
+  3389:{level:'alto',   note:'RDP — alvo de brute-force'},
+  5432:{level:'alto',   note:'PostgreSQL exposto'},
+  5900:{level:'alto',   note:'VNC — autenticação fraca comum'},
+  6379:{level:'crítico',note:'Redis sem auth por padrão'},
+  9200:{level:'crítico',note:'Elasticsearch — dados expostos'},
+  27017:{level:'crítico',note:'MongoDB sem auth por padrão'},
+};
+const RISK_COLOR = { crítico:'#ef4444', alto:'#f59e0b', médio:'#4f9eff', baixo:'#22c55e' };
+
+function psScanPreset(p) {
+  if (p === 'common') { document.getElementById('ps-from').value=1;     document.getElementById('ps-to').value=1024; }
+  if (p === 'web')    { document.getElementById('ps-from').value=80;    document.getElementById('ps-to').value=8888; }
+  if (p === 'full')   { document.getElementById('ps-from').value=1;     document.getElementById('ps-to').value=10000; }
+}
+
+async function psScan() {
+  const host    = document.getElementById('ps-host').value.trim();
+  const from    = parseInt(document.getElementById('ps-from').value) || 1;
+  const to      = parseInt(document.getElementById('ps-to').value) || 1024;
+  const timeout = parseFloat(document.getElementById('ps-timeout').value);
+  const btn     = document.getElementById('ps-btn');
+
+  btn.disabled = true;
+  btn.textContent = '⟳ Escaneando…';
+  document.getElementById('ps-results').style.display   = 'none';
+  document.getElementById('ps-progress').style.display  = '';
+  document.getElementById('ps-progress-bar').style.width = '0%';
+  document.getElementById('ps-progress-lbl').textContent = `Escaneando ${host} — portas ${from}–${to}…`;
+
+  // fake progress animation while waiting
+  let pct = 0;
+  const progressTimer = setInterval(() => {
+    pct = Math.min(pct + (Math.random() * 3), 90);
+    document.getElementById('ps-progress-bar').style.width = pct + '%';
+  }, 300);
+
+  try {
+    const res  = await fetch(`/api/network/portscan?host=${encodeURIComponent(host)}&from=${from}&to=${to}&timeout=${timeout}`);
+    const data = await res.json();
+    clearInterval(progressTimer);
+    if (data.error) { alert(data.error); return; }
+
+    document.getElementById('ps-progress-bar').style.width = '100%';
+    psData = data.open;
+    document.getElementById('ps-summary').textContent =
+      `${data.host} · ${data.scanned} portas varridas · ${data.open.length} abertas`;
+    document.getElementById('ps-filter').value = '';
+    psRender();
+    document.getElementById('ps-results').style.display = '';
+  } catch(e) {
+    clearInterval(progressTimer);
+    alert('Erro: ' + e);
+  } finally {
+    clearInterval(progressTimer);
+    document.getElementById('ps-progress').style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = '▶ Escanear';
+  }
+}
+
+function psRender() {
+  const q     = document.getElementById('ps-filter').value.toLowerCase();
+  const list  = psData.filter(p =>
+    !q || String(p.port).includes(q) || p.service.toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('ps-tbody');
+  const empty = document.getElementById('ps-empty');
+  if (!list.length) { tbody.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = list.map(p => {
+    const risk  = PS_RISK[p.port];
+    const rClr  = risk ? RISK_COLOR[risk.level] : 'var(--muted)';
+    const rBadge = risk
+      ? `<span style="background:${rClr}22;color:${rClr};border:1px solid ${rClr}44;padding:1px 7px;
+                      border-radius:8px;font-size:.62rem;font-weight:600">${risk.level.toUpperCase()}</span>`
+      : `<span style="color:var(--muted);font-size:.7rem">—</span>`;
+    const rNote = risk ? `<span style="font-size:.68rem;color:var(--muted);margin-left:6px">${risk.note}</span>` : '';
+    return `<tr>
+      <td style="padding:7px 14px;font-family:monospace;font-weight:700;color:var(--accent)">${p.port}</td>
+      <td style="padding:7px 14px;font-size:.78rem">${p.service || '<span style="color:var(--muted)">desconhecido</span>'}</td>
+      <td style="padding:7px 14px"><span style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e44;
+          padding:1px 7px;border-radius:8px;font-size:.62rem;font-weight:600">ABERTA</span></td>
+      <td style="padding:7px 14px">${rBadge}${rNote}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// REMOTE SSH
+// ══════════════════════════════════════════════════════════════════════
+let rmSession    = null;   // { id, host, port, user }
+let rmEditIdx    = null;   // index being edited in saved hosts
+
+// ── localStorage helpers ──────────────────────────────────────────────
+function rmGetHosts() {
+  try { return JSON.parse(localStorage.getItem('rm_hosts') || '[]'); } catch { return []; }
+}
+function rmSaveHosts(h) { localStorage.setItem('rm_hosts', JSON.stringify(h)); }
+
+// ── init ──────────────────────────────────────────────────────────────
+function rmInit() { rmRenderHosts(); }
+
+// ── host list ─────────────────────────────────────────────────────────
+function rmRenderHosts() {
+  const hosts = rmGetHosts();
+  const el    = document.getElementById('rm-host-list');
+  if (!hosts.length) {
+    el.innerHTML = '<div style="font-size:.73rem;color:var(--muted);text-align:center;padding:12px 0">Nenhum host salvo.<br>Adicione abaixo.</div>';
+    return;
+  }
+  el.innerHTML = hosts.map((h, i) => {
+    const isActive = rmSession && rmSession.host === h.host && rmSession.user === h.user;
+    return `<div class="rm-host-card ${isActive ? 'active' : ''}" onclick="rmSelectHost(${i})">
+      <span class="rm-host-icon">${h.icon || '🖥️'}</span>
+      <div class="rm-host-info">
+        <div class="rm-host-name">${h.label}</div>
+        <div class="rm-host-addr">${h.user}@${h.host}:${h.port}</div>
+      </div>
+      <button class="btn btn-ghost" style="padding:2px 7px;font-size:.65rem" onclick="event.stopPropagation();rmEditHost(${i})">✎</button>
+      <button class="btn btn-ghost" style="padding:2px 7px;font-size:.65rem;color:var(--red)" onclick="event.stopPropagation();rmDeleteHost(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function rmSelectHost(i) {
+  const h = rmGetHosts()[i];
+  if (!h) return;
+  document.getElementById('rm-f-label').value = h.label;
+  document.getElementById('rm-f-icon').value  = h.icon || '🖥️';
+  document.getElementById('rm-f-host').value  = h.host;
+  document.getElementById('rm-f-port').value  = h.port;
+  document.getElementById('rm-f-user').value  = h.user;
+  document.getElementById('rm-f-pass').value  = h.password || '';
+  document.getElementById('rm-f-key').value   = h.key_path || '';
+  document.getElementById('rm-form-panel').style.display = '';
+  rmConnect(h);
+}
+
+function rmEditHost(i) {
+  rmEditIdx = i;
+  const h = rmGetHosts()[i];
+  document.getElementById('rm-f-label').value = h.label;
+  document.getElementById('rm-f-icon').value  = h.icon || '🖥️';
+  document.getElementById('rm-f-host').value  = h.host;
+  document.getElementById('rm-f-port').value  = h.port;
+  document.getElementById('rm-f-user').value  = h.user;
+  document.getElementById('rm-f-pass').value  = h.password || '';
+  document.getElementById('rm-f-key').value   = h.key_path || '';
+  document.getElementById('rm-form-title').textContent = 'Editar host';
+  document.getElementById('rm-form-panel').style.display = '';
+}
+
+function rmDeleteHost(i) {
+  const hosts = rmGetHosts();
+  hosts.splice(i, 1);
+  rmSaveHosts(hosts);
+  rmRenderHosts();
+}
+
+function rmShowAddHost() {
+  rmEditIdx = null;
+  document.getElementById('rm-f-label').value = '';
+  document.getElementById('rm-f-host').value  = '';
+  document.getElementById('rm-f-port').value  = '22';
+  document.getElementById('rm-f-user').value  = '';
+  document.getElementById('rm-f-pass').value  = '';
+  document.getElementById('rm-f-key').value   = '';
+  document.getElementById('rm-form-title').textContent = 'Novo host';
+  document.getElementById('rm-form-panel').style.display = '';
+}
+
+function rmHideForm() { document.getElementById('rm-form-panel').style.display = 'none'; }
+
+function rmSaveHost() {
+  const entry = {
+    label:    document.getElementById('rm-f-label').value.trim() || 'Sem nome',
+    icon:     document.getElementById('rm-f-icon').value,
+    host:     document.getElementById('rm-f-host').value.trim(),
+    port:     parseInt(document.getElementById('rm-f-port').value) || 22,
+    user:     document.getElementById('rm-f-user').value.trim(),
+    password: document.getElementById('rm-f-pass').value,
+    key_path: document.getElementById('rm-f-key').value.trim(),
+  };
+  if (!entry.host || !entry.user) { alert('Host e usuário são obrigatórios'); return; }
+  const hosts = rmGetHosts();
+  if (rmEditIdx !== null) hosts[rmEditIdx] = entry;
+  else hosts.push(entry);
+  rmSaveHosts(hosts);
+  rmEditIdx = null;
+  rmHideForm();
+  rmRenderHosts();
+}
+
+// ── connection ────────────────────────────────────────────────────────
+function rmSetStatus(state, text) {
+  const bar  = document.getElementById('rm-status-bar');
+  const dot  = document.getElementById('rm-dot');
+  const span = document.getElementById('rm-status-text');
+  bar.className  = 'rm-status-bar ' + state;
+  dot.className  = 'rm-dot '        + state;
+  span.textContent = text;
+  document.getElementById('rm-btn-disconnect').style.display = state === 'connected' ? '' : 'none';
+}
+
+function rmTerm(line) {
+  const t = document.getElementById('rm-terminal');
+  // colour by prefix
+  let cls = '';
+  if (line.startsWith('[ok]') || line.includes('✓'))     cls = 't-ok';
+  else if (line.startsWith('[…]') || line.startsWith('[info]')) cls = 't-info';
+  else if (line.startsWith('[warn]'))                    cls = 't-warn';
+  else if (line.startsWith('[erro]') || line.startsWith('[stderr]')) cls = 't-err';
+  else if (line.startsWith('[upload]'))                  cls = 't-upload';
+  const span = cls ? `<span class="${cls}">${rmEsc(line)}</span>` : rmEsc(line);
+  t.innerHTML += span + '\n';
+  t.scrollTop = t.scrollHeight;
+}
+function rmEsc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function rmClearTerm() { document.getElementById('rm-terminal').innerHTML = ''; }
+
+async function rmConnect(h) {
+  if (rmSession) await rmDisconnect();
+  rmSetStatus('connecting', `Conectando a ${h.user}@${h.host}:${h.port}…`);
+  rmClearTerm();
+  rmTerm(`[…] Conectando a ${h.user}@${h.host}:${h.port}…`);
+
+  try {
+    const res  = await fetch('/api/remote/connect', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ host: h.host, port: h.port, user: h.user,
+                             password: h.password || '', key_path: h.key_path || '' })
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      rmSetStatus('error', 'Falha na conexão: ' + data.error);
+      rmTerm('[erro] ' + data.error);
+      return;
+    }
+    rmSession = { id: data.session_id, host: h.host, port: h.port, user: h.user };
+    rmSetStatus('connected', `Conectado — ${h.user}@${h.host}`);
+    const uname = document.getElementById('rm-uname');
+    uname.textContent = '$ ' + data.uname;
+    uname.style.display = '';
+    rmTerm('[ok] Conexão estabelecida  ·  ' + data.uname);
+    document.getElementById('rm-deploy-section').style.display = '';
+    document.getElementById('rm-cmd-row').style.display = '';
+    rmRenderHosts();
+    rmCheckMonintion();
+  } catch(e) {
+    rmSetStatus('error', 'Erro: ' + e);
+    rmTerm('[erro] ' + e);
+  }
+}
+
+async function rmDisconnect() {
+  if (!rmSession) return;
+  await fetch('/api/remote/disconnect', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ session_id: rmSession.id })
+  }).catch(()=>{});
+  rmSession = null;
+  rmSetStatus('disconnected', 'Sem conexão ativa');
+  document.getElementById('rm-uname').style.display = 'none';
+  document.getElementById('rm-deploy-section').style.display = 'none';
+  document.getElementById('rm-cmd-row').style.display = 'none';
+  document.getElementById('rm-btn-open').style.display = 'none';
+  rmRenderHosts();
+  rmTerm('[info] Desconectado.');
+}
+
+// ── command exec ──────────────────────────────────────────────────────
+async function rmExecCmd() {
+  if (!rmSession) return;
+  const inp = document.getElementById('rm-cmd-input');
+  const cmd = inp.value.trim();
+  if (!cmd) return;
+  inp.value = '';
+  rmTerm('$ ' + cmd);
+  try {
+    const res  = await fetch('/api/remote/exec', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: rmSession.id, command: cmd })
+    });
+    const data = await res.json();
+    if (!data.ok) { rmTerm('[erro] ' + data.error); return; }
+    if (data.stdout) data.stdout.trim().split('\n').forEach(l => rmTerm(l));
+    if (data.stderr) data.stderr.trim().split('\n').forEach(l => rmTerm('[stderr] ' + l));
+  } catch(e) { rmTerm('[erro] ' + e); }
+}
+
+// ── MONINTION status ──────────────────────────────────────────────────
+async function rmCheckMonintion() {
+  if (!rmSession) return;
+  document.getElementById('rm-mon-text').textContent = 'Verificando…';
+  try {
+    const res  = await fetch('/api/remote/monintion-status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: rmSession.id })
+    });
+    const data = await res.json();
+    const dot  = document.getElementById('rm-mon-dot');
+    const txt  = document.getElementById('rm-mon-text');
+    const btnO = document.getElementById('rm-btn-open');
+    if (data.running) {
+      dot.style.background = '#22c55e';
+      txt.textContent      = 'MONINTION em execução na porta 5050';
+      btnO.style.display   = '';
+    } else {
+      dot.style.background = '#ef4444';
+      txt.textContent      = 'MONINTION não está rodando';
+      btnO.style.display   = 'none';
+    }
+  } catch(e) {
+    document.getElementById('rm-mon-text').textContent = 'Erro ao verificar';
+  }
+}
+
+// ── deploy ────────────────────────────────────────────────────────────
+async function rmDeploy() {
+  if (!rmSession) return;
+  const btn = document.getElementById('rm-btn-deploy');
+  btn.disabled = true;
+  btn.textContent = '⟳ Deploying…';
+  rmTerm('\n[…] Iniciando deploy…');
+
+  try {
+    const res  = await fetch('/api/remote/deploy', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: rmSession.id })
+    });
+    const data = await res.json();
+    if (data.log) data.log.split('\n').forEach(l => { if(l) rmTerm(l); });
+    if (data.ok) {
+      rmTerm('\n[ok] Deploy concluído! MONINTION rodando em ' + rmSession.host + ':5050');
+      document.getElementById('rm-btn-open').style.display = '';
+      rmCheckMonintion();
+    } else {
+      rmTerm('[erro] ' + (data.error || 'Deploy falhou'));
+    }
+  } catch(e) {
+    rmTerm('[erro] ' + e);
+  }
+  btn.disabled = false;
+  btn.textContent = '🚀 Deploy MONINTION';
+}
+
+function rmOpenRemote() {
+  if (!rmSession) return;
+  window.open(`http://${rmSession.host}:5050`, '_blank');
 }
 
 // ══════════════════════════════════════════════════════════════════════

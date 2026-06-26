@@ -534,6 +534,187 @@ def api_network():
     })
 
 
+# ── system info ──────────────────────────────────────────────────────────────
+
+@app.route("/api/sysinfo")
+def api_sysinfo():
+    import platform, socket as _sock
+
+    uname = platform.uname()
+    boot  = datetime.fromtimestamp(psutil.boot_time())
+    up    = datetime.now() - boot
+
+    # CPU
+    cpu_freq  = psutil.cpu_freq()
+    cpu_times = psutil.cpu_times_percent(interval=0.3)
+
+    # RAM
+    vm  = psutil.virtual_memory()
+    swp = psutil.swap_memory()
+
+    # disks
+    disks = []
+    for p in psutil.disk_partitions(all=False):
+        try:
+            u = psutil.disk_usage(p.mountpoint)
+            disks.append({
+                "device": p.device, "mountpoint": p.mountpoint,
+                "fstype": p.fstype, "opts": p.opts,
+                "total_gb": round(u.total/1024**3,2),
+                "used_gb":  round(u.used/1024**3,2),
+                "free_gb":  round(u.free/1024**3,2),
+                "percent":  u.percent,
+            })
+        except PermissionError:
+            continue
+
+    # network interfaces (only primary IPs)
+    ifaces = []
+    for name, addrs in psutil.net_if_addrs().items():
+        st = psutil.net_if_stats().get(name)
+        for a in addrs:
+            if a.family == 2:  # AF_INET IPv4
+                ifaces.append({"name": name, "ip": a.address,
+                                "netmask": a.netmask or "",
+                                "is_up": st.isup if st else False})
+
+    # users
+    users = []
+    try:
+        for u in psutil.users():
+            users.append({"name": u.name, "terminal": u.terminal or "",
+                          "host": u.host or "", "started": datetime.fromtimestamp(u.started).strftime("%Y-%m-%d %H:%M")})
+    except Exception:
+        pass
+
+    # temperature (Linux/RPi mainly)
+    temps = {}
+    try:
+        for name, entries in psutil.sensors_temperatures().items():
+            temps[name] = [{"label": e.label or name, "current": e.current,
+                            "high": e.high, "critical": e.critical} for e in entries]
+    except (AttributeError, Exception):
+        pass
+
+    # battery
+    battery = None
+    try:
+        b = psutil.sensors_battery()
+        if b:
+            battery = {"percent": b.percent, "plugged": b.power_plugged,
+                       "secs_left": b.secsleft if b.secsleft != -1 else None}
+    except (AttributeError, Exception):
+        pass
+
+    # Python runtime info
+    py = sys.version.split()[0]
+
+    h, rem = divmod(int(up.total_seconds()), 3600)
+    m2, s  = divmod(rem, 60)
+
+    return jsonify({
+        "os": {
+            "system":   uname.system,
+            "node":     uname.node,
+            "release":  uname.release,
+            "version":  uname.version,
+            "machine":  uname.machine,
+            "processor":uname.processor or platform.processor(),
+        },
+        "hostname": _sock.gethostname(),
+        "python":   py,
+        "platform": platform.platform(),
+        "boot_time":    boot.strftime("%Y-%m-%d %H:%M:%S"),
+        "uptime":       f"{h}h {m2}m {s}s",
+        "uptime_secs":  int(up.total_seconds()),
+        "cpu": {
+            "physical_cores": psutil.cpu_count(logical=False),
+            "logical_cores":  psutil.cpu_count(logical=True),
+            "freq_current":   round(cpu_freq.current) if cpu_freq else 0,
+            "freq_min":       round(cpu_freq.min)     if cpu_freq else 0,
+            "freq_max":       round(cpu_freq.max)     if cpu_freq else 0,
+            "percent":        psutil.cpu_percent(interval=0.2),
+            "user_pct":       cpu_times.user,
+            "system_pct":     cpu_times.system,
+            "idle_pct":       cpu_times.idle,
+            "ctx_switches":   psutil.cpu_stats().ctx_switches,
+            "interrupts":     psutil.cpu_stats().interrupts,
+        },
+        "ram": {
+            "total_gb":     round(vm.total/1024**3, 2),
+            "available_gb": round(vm.available/1024**3, 2),
+            "used_gb":      round(vm.used/1024**3, 2),
+            "percent":      vm.percent,
+            "buffers_gb":   round(getattr(vm,'buffers',0)/1024**3, 2),
+            "cached_gb":    round(getattr(vm,'cached',0)/1024**3, 2),
+        },
+        "swap": {
+            "total_gb": round(swp.total/1024**3, 2),
+            "used_gb":  round(swp.used/1024**3, 2),
+            "percent":  swp.percent,
+        },
+        "disks":    disks,
+        "ifaces":   ifaces,
+        "users":    users,
+        "temps":    temps,
+        "battery":  battery,
+        "process_count": len(psutil.pids()),
+    })
+
+
+# ── port scanner ─────────────────────────────────────────────────────────────
+
+import socket
+import concurrent.futures
+
+_COMMON_SERVICES = {
+    21:'FTP',22:'SSH',23:'Telnet',25:'SMTP',53:'DNS',80:'HTTP',
+    110:'POP3',143:'IMAP',443:'HTTPS',445:'SMB',3306:'MySQL',
+    3389:'RDP',5432:'PostgreSQL',5900:'VNC',6379:'Redis',
+    8080:'HTTP-Alt',8443:'HTTPS-Alt',8888:'Jupyter',27017:'MongoDB',
+    5050:'MONINTION',1883:'MQTT',5672:'AMQP',9200:'Elasticsearch',
+}
+
+def _probe_port(host, port, timeout):
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return port, True
+    except Exception:
+        return port, False
+
+@app.route("/api/network/portscan")
+def api_portscan():
+    host    = request.args.get("host","127.0.0.1").strip()
+    p_from  = max(1,   min(int(request.args.get("from", 1)),   65535))
+    p_to    = max(1,   min(int(request.args.get("to",   1024)), 65535))
+    timeout = max(0.1, min(float(request.args.get("timeout", 0.5)), 3.0))
+    if p_to < p_from: p_from, p_to = p_to, p_from
+    if p_to - p_from > 9999:
+        return jsonify({"error": "Máximo de 10 000 portas por varredura"}), 400
+
+    ports   = list(range(p_from, p_to + 1))
+    open_ports = []
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=200) as ex:
+        futures = {ex.submit(_probe_port, host, p, timeout): p for p in ports}
+        for fut in concurrent.futures.as_completed(futures):
+            port, is_open = fut.result()
+            if is_open:
+                open_ports.append({
+                    "port":    port,
+                    "service": _COMMON_SERVICES.get(port, ""),
+                })
+
+    open_ports.sort(key=lambda x: x["port"])
+    return jsonify({
+        "host":   host,
+        "from":   p_from,
+        "to":     p_to,
+        "scanned": len(ports),
+        "open":   open_ports,
+    })
+
+
 # ── apps ─────────────────────────────────────────────────────────────────────
 
 def _read_win_uninstall_key(hive, subkey, seen, apps):
@@ -653,6 +834,171 @@ def api_apps():
 
     out.sort(key=lambda x: x["name"].lower())
     return jsonify(out)
+
+
+# ── remote SSH ───────────────────────────────────────────────────────────────
+
+import uuid
+import paramiko
+
+_ssh_sessions = {}  # sid -> {client, host, port, user, connected_at}
+
+def _sess_exec(client, cmd, timeout=30):
+    """Run command, return (stdout, stderr, exit_code)."""
+    _, out, err = client.exec_command(cmd, timeout=timeout)
+    return (out.read().decode(errors="replace"),
+            err.read().decode(errors="replace"),
+            out.channel.recv_exit_status())
+
+@app.route("/api/remote/sessions")
+def remote_sessions():
+    return jsonify([
+        {"id": k, "host": v["host"], "port": v["port"],
+         "user": v["user"], "connected_at": v["connected_at"]}
+        for k, v in _ssh_sessions.items()
+    ])
+
+@app.route("/api/remote/connect", methods=["POST"])
+def remote_connect():
+    d    = request.get_json(force=True)
+    host = d.get("host","").strip()
+    port = int(d.get("port", 22))
+    user = d.get("user","").strip()
+    pwd  = d.get("password","")
+    key  = d.get("key_path","").strip()
+    if not host or not user:
+        return jsonify({"ok": False, "error": "Host e usuário são obrigatórios"}), 400
+
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        if key:
+            client.connect(host, port=port, username=user, key_filename=os.path.expanduser(key), timeout=10)
+        else:
+            client.connect(host, port=port, username=user, password=pwd, timeout=10)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+    sid = str(uuid.uuid4())[:8]
+    _ssh_sessions[sid] = {
+        "client": client, "host": host, "port": port,
+        "user": user, "connected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    # quick uname
+    uname, _, _ = _sess_exec(client, "uname -srm", timeout=5)
+    return jsonify({"ok": True, "session_id": sid, "uname": uname.strip()})
+
+@app.route("/api/remote/disconnect", methods=["POST"])
+def remote_disconnect():
+    d   = request.get_json(force=True)
+    sid = d.get("session_id","")
+    s   = _ssh_sessions.pop(sid, None)
+    if s:
+        try: s["client"].close()
+        except: pass
+    return jsonify({"ok": True})
+
+@app.route("/api/remote/exec", methods=["POST"])
+def remote_exec():
+    d   = request.get_json(force=True)
+    sid = d.get("session_id","")
+    cmd = d.get("command","").strip()
+    s   = _ssh_sessions.get(sid)
+    if not s:
+        return jsonify({"ok": False, "error": "Sessão expirada ou não encontrada"}), 404
+    if not cmd:
+        return jsonify({"ok": False, "error": "Comando vazio"}), 400
+    try:
+        out, err, rc = _sess_exec(s["client"], cmd, timeout=60)
+        return jsonify({"ok": True, "stdout": out, "stderr": err, "rc": rc})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+@app.route("/api/remote/monintion-status", methods=["POST"])
+def remote_monintion_status():
+    d   = request.get_json(force=True)
+    sid = d.get("session_id","")
+    s   = _ssh_sessions.get(sid)
+    if not s:
+        return jsonify({"ok": False}), 404
+    try:
+        out, _, _ = _sess_exec(s["client"], "pgrep -fa 'python.*server.py' 2>/dev/null; echo EXIT", timeout=8)
+        running = "server.py" in out
+        port_out, _, _ = _sess_exec(s["client"], "ss -tlnp 2>/dev/null | grep ':5050' | head -1 || true", timeout=5)
+        return jsonify({"ok": True, "running": running, "port_open": bool(port_out.strip())})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+_DEPLOY_STEPS = [
+    ("Verificando Python 3…",      "python3 --version"),
+    ("Instalando Flask e psutil…", "pip3 install flask psutil --quiet 2>&1 | tail -3"),
+    ("Parando instância anterior…","pkill -f 'python3 server.py' 2>/dev/null; sleep 1; echo ok"),
+]
+
+@app.route("/api/remote/deploy", methods=["POST"])
+def remote_deploy():
+    d   = request.get_json(force=True)
+    sid = d.get("session_id","")
+    s   = _ssh_sessions.get(sid)
+    if not s:
+        return jsonify({"ok": False, "error": "Sessão não encontrada"}), 404
+
+    client = s["client"]
+    log    = []
+
+    try:
+        # home dir
+        home, _, _ = _sess_exec(client, "echo $HOME", timeout=5)
+        home = home.strip() or "/root"
+        deploy_dir = f"{home}/monintion"
+        log.append(f"[info] Diretório: {deploy_dir}")
+
+        # run pre-steps
+        for label, cmd in _DEPLOY_STEPS:
+            log.append(f"[…] {label}")
+            out, err, rc = _sess_exec(client, cmd, timeout=90)
+            if out.strip(): log.append(out.strip())
+            if err.strip(): log.append("[stderr] " + err.strip()[:300])
+            if rc not in (0, None) and "pkill" not in cmd:
+                return jsonify({"ok": False, "error": f"Falhou: {label}", "log": "\n".join(log)})
+
+        # mkdir
+        _sess_exec(client, f"mkdir -p {deploy_dir}/templates", timeout=5)
+        log.append("[…] Enviando arquivos via SFTP…")
+
+        sftp = client.open_sftp()
+        here = os.path.dirname(os.path.abspath(__file__))
+        files_to_send = [
+            (os.path.join(here, "server.py"),             f"{deploy_dir}/server.py"),
+            (os.path.join(here, "db.py"),                 f"{deploy_dir}/db.py"),
+            (os.path.join(here, "requirements.txt"),      f"{deploy_dir}/requirements.txt"),
+            (os.path.join(here, "templates", "index.html"), f"{deploy_dir}/templates/index.html"),
+        ]
+        for src, dst in files_to_send:
+            if os.path.exists(src):
+                sftp.put(src, dst)
+                log.append(f"[upload] {os.path.basename(src)} ✓")
+        sftp.close()
+
+        # start
+        log.append("[…] Iniciando servidor remoto…")
+        start_cmd = f"cd {deploy_dir} && nohup python3 server.py > monintion.log 2>&1 &"
+        _sess_exec(client, start_cmd, timeout=5)
+
+        # verify after 3s
+        import time as _t; _t.sleep(3)
+        chk, _, _ = _sess_exec(client, "pgrep -fa 'python.*server.py' 2>/dev/null | head -1 || echo NOT_RUNNING", timeout=5)
+        if "NOT_RUNNING" in chk:
+            log_tail, _, _ = _sess_exec(client, f"tail -10 {deploy_dir}/monintion.log 2>/dev/null || echo sem log", timeout=5)
+            log.append("[warn] Processo não detectado. Log:\n" + log_tail)
+            return jsonify({"ok": False, "log": "\n".join(log), "error": "Servidor não iniciou"})
+
+        log.append("[ok] MONINTION rodando na porta 5050 ✓")
+        return jsonify({"ok": True, "log": "\n".join(log), "host": s["host"]})
+
+    except Exception as e:
+        log.append(f"[erro] {e}")
+        return jsonify({"ok": False, "log": "\n".join(log), "error": str(e)})
 
 
 if __name__ == "__main__":
