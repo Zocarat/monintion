@@ -1,0 +1,6 @@
+monintion.db
+__pycache__/
+*.pyc
+DEVLOG.md
+.claude/
+INTRO.md

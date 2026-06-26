@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MONINTION</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+:root{
+  --bg:#080c12;--surface:#0f1520;--surface2:#161e2e;--border:#1e2d45;
+  --accent:#4f9eff;--accent2:#7c5cfc;--green:#22c55e;--yellow:#f59e0b;
+  --red:#ef4444;--text:#e2eaf6;--muted:#5a7090;--muted2:#8ba3c4;
+  --glow:rgba(79,158,255,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;
+     display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--border);
+         display:flex;flex-direction:column;padding:0;overflow:hidden}
+#sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+#sidebar-logo h1{font-size:1.1rem;letter-spacing:3px;color:var(--accent);font-weight:700}
+#sidebar-logo p{font-size:.7rem;color:var(--muted);margin-top:3px;letter-spacing:1px}
+#sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-section{padding:6px 16px 4px;font-size:.65rem;color:var(--muted);letter-spacing:1.5px;
+             text-transform:uppercase;margin-top:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;
+          font-size:.83rem;color:var(--muted2);transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--accent);background:var(--glow);border-left-color:var(--accent)}
+.nav-icon{font-size:1rem;width:18px;text-align:center}
+#sidebar-status{padding:14px 16px;border-top:1px solid var(--border);font-size:.72rem;color:var(--muted)}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+            background:var(--green);margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{padding:12px 24px;border-bottom:1px solid var(--border);display:flex;
+        align-items:center;gap:16px;background:var(--surface);flex-shrink:0}
+#topbar-title{font-size:.95rem;font-weight:600}
+#topbar-sub{font-size:.75rem;color:var(--muted)}
+#topbar-pills{margin-left:auto;display:flex;gap:8px}
+.pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+      padding:4px 12px;font-size:.72rem;color:var(--muted2);white-space:nowrap}
+.pill b{color:var(--text)}
+#content{flex:1;overflow-y:auto;padding:22px 24px}
+
+/* ── PAGES ── */
+.page{display:none}.page.active{display:block}
+
+/* ── METRIC CARDS ── */
+.metrics-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:22px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+             padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.metric-card:hover{border-color:var(--border);box-shadow:0 0 0 1px var(--accent)22}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.metric-card.blue::before{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.metric-card.green::before{background:linear-gradient(90deg,var(--green),#16a34a)}
+.metric-card.yellow::before{background:linear-gradient(90deg,var(--yellow),#d97706)}
+.metric-card.red::before{background:linear-gradient(90deg,var(--red),#dc2626)}
+.metric-card.purple::before{background:linear-gradient(90deg,var(--accent2),#9333ea)}
+.mc-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.mc-value{font-size:1.9rem;font-weight:700;line-height:1;margin-bottom:6px}
+.mc-sub{font-size:.72rem;color:var(--muted2)}
+.mc-bar{height:4px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden}
+.mc-bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.mc-spark{margin-top:8px;height:32px}
+
+/* ── GAUGE ── */
+.gauge-wrap{position:relative;width:90px;height:52px;margin:4px auto 0}
+.gauge-svg{width:90px;height:52px}
+.gauge-val{position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+           font-size:.9rem;font-weight:700;text-align:center;line-height:1}
+
+/* ── CHARTS ROW ── */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px}
+.chart-card h3{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.chart-card.full{grid-column:1/-1}
+
+/* ── HISTORY CONTROLS ── */
+.hcontrols{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.hcontrols label{font-size:.75rem;color:var(--muted)}
+select,input[type=text],input[type=range]{background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);padding:5px 10px;border-radius:6px;font-size:.78rem}
+select:focus,input:focus{outline:none;border-color:var(--accent)}
+.btn{border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:.78rem;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{opacity:.85}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted2)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── FILE BROWSER ── */
+.fb-layout{display:grid;grid-template-columns:1fr 300px;gap:14px;align-items:start}
+.fb-main{}
+.fb-side{display:flex;flex-direction:column;gap:14px}
+.fb-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.fb-panel h3{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+
+/* drives */
+.drives-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.drive-chip{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+            padding:5px 14px;font-size:.78rem;cursor:pointer;transition:all .15s;color:var(--muted2)}
+.drive-chip:hover,.drive-chip.active{border-color:var(--accent);color:var(--accent);background:var(--glow)}
+
+/* breadcrumb */
+.breadcrumb{display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);
+            border-radius:8px;padding:7px 14px;font-size:.78rem;flex-wrap:wrap;margin-bottom:10px}
+.crumb{color:var(--accent);cursor:pointer;transition:opacity .1s}.crumb:hover{opacity:.7}
+.crumb-sep{color:var(--border);margin:0 2px}
+
+/* toolbar */
+.fb-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+#fb-search{flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);
+           color:var(--text);padding:7px 12px;border-radius:8px;font-size:.78rem}
+#fb-search:focus{outline:none;border-color:var(--accent)}
+.fb-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+           padding:7px 10px;border-radius:8px;font-size:.78rem}
+.filter-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.filter-row label{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:90px;accent-color:var(--accent)}
+.filter-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+             padding:3px 10px;font-size:.7rem;color:var(--muted2);cursor:pointer;transition:all .15s}
+.filter-chip.on{border-color:var(--accent);color:var(--accent);background:var(--glow)}
+
+/* summary bar */
+.fb-summary{font-size:.72rem;color:var(--muted);margin-bottom:8px;display:flex;gap:16px;flex-wrap:wrap}
+.fb-summary span b{color:var(--text)}
+
+/* table */
+.fb-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+thead{background:var(--bg)}
+th{padding:10px 14px;text-align:left;color:var(--muted);font-weight:500;font-size:.68rem;
+   text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{color:var(--text)}th.sorted{color:var(--accent)}
+td{padding:7px 14px;border-top:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:#ffffff06}
+.fb-name-cell{display:flex;align-items:center;gap:8px;cursor:pointer}
+.fb-name-cell:hover .fb-name-text{color:var(--accent)}
+.fb-name-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px}
+.fb-icon{font-size:.95rem;flex-shrink:0}
+.size-bar-wrap{display:flex;align-items:center;gap:6px}
+.size-bar{height:4px;border-radius:2px;flex-shrink:0;min-width:2px;transition:width .3s}
+.size-num{white-space:nowrap;text-align:right}
+.size-unit-sm{font-size:.67rem;color:var(--muted);margin-left:1px}
+.badge-ext{background:var(--surface2);border:1px solid var(--border);border-radius:4px;
+           padding:1px 5px;font-size:.65rem;color:var(--muted);font-family:monospace}
+.date-muted{color:var(--muted);font-size:.73rem;white-space:nowrap}
+.empty-state{padding:48px;text-align:center;color:var(--muted);font-size:.85rem}
+.loading{padding:32px;text-align:center;color:var(--muted);font-size:.85rem}
+
+/* side panel items */
+.top-file-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.top-file-item:last-child{border-bottom:none}
+.tfi-name{font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;color:var(--muted2)}
+.tfi-size{font-size:.72rem;color:var(--text);white-space:nowrap;font-weight:600}
+.tfi-bar-wrap{height:3px;background:var(--border);border-radius:2px;margin-top:3px;overflow:hidden}
+.tfi-bar{height:100%;border-radius:2px;background:var(--accent)}
+
+.ext-item{display:flex;align-items:center;gap:8px;padding:4px 0}
+.ext-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ext-name{font-size:.73rem;flex:1;color:var(--muted2)}
+.ext-bar-bg{flex:2;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.ext-bar-fill{height:100%;border-radius:2px}
+.ext-size{font-size:.68rem;color:var(--muted);white-space:nowrap}
+
+/* ── cleaner ── */
+.cl-hero{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+         padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.cl-hero-title{font-size:1.05rem;font-weight:700;margin-bottom:4px}
+.cl-hero-sub{font-size:.78rem;color:var(--muted2)}
+.cl-idle-msg{text-align:center;padding:60px 20px;color:var(--muted);font-size:.9rem}
+.cl-select-bar{display:flex;align-items:center;gap:12px;padding:10px 0;margin-bottom:12px;
+               font-size:.78rem;color:var(--muted2);border-bottom:1px solid var(--border)}
+.cl-select-bar input{accent-color:var(--accent)}
+.cl-cat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+             padding:14px 18px;margin-bottom:8px;display:flex;align-items:center;gap:14px;
+             transition:border-color .15s;cursor:pointer}
+.cl-cat-card:hover{border-color:#2a3f5f}
+.cl-cat-card.selected{border-color:var(--accent);background:var(--glow)}
+.cl-cat-card.empty{opacity:.4;cursor:default}
+.cl-cat-check{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.cl-cat-icon{font-size:1.3rem;flex-shrink:0}
+.cl-cat-info{flex:1;min-width:0}
+.cl-cat-label{font-size:.85rem;font-weight:500;margin-bottom:2px}
+.cl-cat-meta{font-size:.7rem;color:var(--muted)}
+.cl-cat-size{text-align:right;flex-shrink:0}
+.cl-cat-size-val{font-size:1rem;font-weight:700}
+.cl-cat-size-unit{font-size:.7rem;color:var(--muted);margin-left:2px}
+.cl-cat-count{font-size:.68rem;color:var(--muted);margin-top:2px}
+.cl-size-bar{height:3px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.cl-size-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.cl-result-box{background:var(--surface);border:1px solid var(--green);border-radius:12px;
+               padding:24px;text-align:center;margin-top:16px}
+.cl-result-freed{font-size:2.5rem;font-weight:800;color:var(--green);line-height:1}
+.cl-result-sub{font-size:.82rem;color:var(--muted2);margin-top:6px}
+.cl-scanning{text-align:center;padding:40px;color:var(--muted)}
+.cl-scanning-dot{display:inline-block;animation:spin 1s linear infinite;font-size:1.5rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── network ── */
+.net-iface-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:20px}
+.net-iface-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.net-iface-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.net-iface-card.up::before{background:linear-gradient(90deg,var(--green),#16a34a)}
+.net-iface-card.down::before{background:var(--border)}
+.net-iface-card.down{opacity:.5}
+.net-iface-name{font-size:.85rem;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+.net-iface-speed{font-size:.68rem;color:var(--muted);margin-bottom:10px}
+.net-addr-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.net-addr-fam{font-size:.6rem;background:var(--surface2);border:1px solid var(--border);
+              border-radius:4px;padding:1px 5px;color:var(--muted);font-family:monospace;flex-shrink:0}
+.net-addr-val{font-size:.72rem;color:var(--muted2);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.net-traffic-row{display:flex;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.net-traffic-item{flex:1;text-align:center}
+.net-traffic-val{font-size:.82rem;font-weight:700}
+.net-traffic-lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.net-speed-val{font-size:.75rem;font-weight:700;color:var(--accent)}
+.conn-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.status-badge{display:inline-block;padding:1px 7px;border-radius:8px;font-size:.62rem;font-weight:600;letter-spacing:.3px}
+.status-ESTABLISHED{background:#22c55e22;color:#22c55e;border:1px solid #22c55e44}
+.status-LISTEN{background:#4f9eff22;color:#4f9eff;border:1px solid #4f9eff44}
+.status-TIME_WAIT{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
+.status-CLOSE_WAIT{background:#ef444422;color:#ef4444;border:1px solid #ef444444}
+
+/* ── apps ── */
+.ap-stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.ap-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+         padding:14px 20px;flex:1;min-width:120px}
+.ap-stat-val{font-size:1.5rem;font-weight:700;color:var(--accent);line-height:1}
+.ap-stat-lbl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+.ap-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+#ap-search{flex:1;min-width:160px;background:var(--surface2);border:1px solid var(--border);
+           color:var(--text);padding:7px 12px;border-radius:8px;font-size:.78rem}
+#ap-search:focus{outline:none;border-color:var(--accent)}
+.ap-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.65rem;font-weight:600;
+          letter-spacing:.5px;white-space:nowrap}
+.ap-badge.running{background:#22c55e22;color:#22c55e;border:1px solid #22c55e44}
+.ap-badge.stopped{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.ap-size-bar{height:4px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden}
+.ap-size-fill{height:100%;border-radius:2px;background:var(--accent)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<aside id="sidebar">
+  <div id="sidebar-logo">
+    <h1>MONINTION</h1>
+    <p>System Monitor</p>
+  </div>
+  <nav id="sidebar-nav">
+    <div class="nav-section">Monitor</div>
+    <div class="nav-item active" onclick="goto('overview')"><span class="nav-icon">⬡</span>Visão Geral</div>
+    <div class="nav-item" onclick="goto('history')"><span class="nav-icon">📈</span>Histórico</div>
+    <div class="nav-section">Arquivos</div>
+    <div class="nav-item" onclick="goto('files')"><span class="nav-icon">📂</span>Explorador</div>
+    <div class="nav-item" onclick="goto('cleaner')"><span class="nav-icon">🧹</span>Limpeza</div>
+    <div class="nav-section">Sistema</div>
+    <div class="nav-item" onclick="goto('apps')"><span class="nav-icon">📦</span>Aplicativos</div>
+    <div class="nav-item" onclick="goto('network')"><span class="nav-icon">🌐</span>Redes</div>
+  </nav>
+  <div id="sidebar-status"><span class="status-dot"></span><span id="last-update">Conectando...</span></div>
+</aside>
+
+<!-- ═══════ MAIN ═══════ -->
+<div id="main">
+  <div id="topbar">
+    <div>
+      <div id="topbar-title">Visão Geral</div>
+      <div id="topbar-sub">Sistema • Ao vivo</div>
+    </div>
+    <div id="topbar-pills">
+      <div class="pill">CPU <b id="tp-cpu">—</b></div>
+      <div class="pill">RAM <b id="tp-ram">—</b></div>
+      <div class="pill">Uptime <b id="tp-up">—</b></div>
+      <div class="pill">Processos <b id="tp-proc">—</b></div>
+    </div>
+  </div>
+  <div id="content">
+
+    <!-- ════ OVERVIEW ════ -->
+    <div id="page-overview" class="page active">
+      <div class="metrics-row" id="metric-cards"></div>
+      <div class="charts-row">
+        <div class="chart-card"><h3>Uso de Disco</h3><canvas id="diskBarChart" height="180"></canvas></div>
+        <div class="chart-card"><h3>RAM</h3><canvas id="ramChart" height="180"></canvas></div>
+      </div>
+      <div class="chart-card full" style="margin-bottom:0">
+        <h3>CPU por Core</h3>
+        <div id="cpu-cores" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
+      </div>
+    </div>
+
+    <!-- ════ HISTORY ════ -->
+    <div id="page-history" class="page">
+      <div class="chart-card" style="margin-bottom:14px">
+        <h3>Disco — Histórico</h3>
+        <div class="hcontrols">
+          <label>Partição <select id="histMount"></select></label>
+          <label>Registros <select id="histLimit">
+            <option value="50">50</option><option value="100" selected>100</option>
+            <option value="200">200</option><option value="500">500</option>
+          </select></label>
+          <button class="btn btn-primary" onclick="loadDiskHistory()">Atualizar</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">GB Usado</div>
+          <canvas id="histDiskGB" height="90"></canvas>
+          <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px">% de Uso</div>
+          <canvas id="histDiskPct" height="60"></canvas>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card"><h3>RAM — Histórico</h3><canvas id="histRamChart" height="160"></canvas></div>
+        <div class="chart-card"><h3>CPU — Histórico</h3><canvas id="histCpuChart" height="160"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ════ FILES ════ -->
+    <div id="page-files" class="page">
+      <div class="drives-bar" id="fb-drives"></div>
+      <div class="breadcrumb" id="fb-breadcrumb"></div>
+
+      <div class="fb-layout">
+        <div class="fb-main">
+          <!-- toolbar -->
+          <div class="fb-toolbar">
+            <button class="btn btn-ghost" onclick="fbUp()">↑ Voltar</button>
+            <input id="fb-search" type="text" placeholder="🔍  Filtrar por nome..." oninput="fbRender()"/>
+            <select class="fb-select" id="fb-ext" onchange="fbRender()">
+              <option value="">Todos os tipos</option>
+            </select>
+            <select class="fb-select" id="fb-sort" onchange="fbRender()">
+              <option value="type">Pastas primeiro</option>
+              <option value="name-asc">Nome ↑</option>
+              <option value="name-desc">Nome ↓</option>
+              <option value="size-desc">Maior tamanho</option>
+              <option value="size-asc">Menor tamanho</option>
+              <option value="date-desc">Mais recente</option>
+              <option value="date-asc">Mais antigo</option>
+            </select>
+          </div>
+          <!-- filters row -->
+          <div class="filter-row">
+            <label>
+              <span class="filter-chip on" id="chip-dot" onclick="toggleChip('dot')">Ocultar dotfiles</span>
+            </label>
+            <label>
+              <span class="filter-chip" id="chip-files" onclick="toggleChip('files')">Só arquivos</span>
+            </label>
+            <label>
+              <span class="filter-chip" id="chip-dirs" onclick="toggleChip('dirs')">Só pastas</span>
+            </label>
+            <label style="margin-left:auto">Min:
+              <input type="range" id="fb-size-min" min="0" max="100" value="0" oninput="fbRender();document.getElementById('fb-size-min-val').textContent=sizeLabel(this.value)">
+              <span id="fb-size-min-val">0 B</span>
+            </label>
+          </div>
+          <!-- date filter -->
+          <div class="filter-row">
+            <label>Modificado nos últimos:
+              <select class="fb-select" id="fb-date-filter" onchange="fbRender()">
+                <option value="0">Qualquer data</option>
+                <option value="1">1 dia</option>
+                <option value="7">7 dias</option>
+                <option value="30">30 dias</option>
+                <option value="90">3 meses</option>
+                <option value="365">1 ano</option>
+              </select>
+            </label>
+          </div>
+          <!-- summary -->
+          <div class="fb-summary" id="fb-summary"></div>
+          <!-- table -->
+          <div class="fb-table-wrap">
+            <table>
+              <thead><tr>
+                <th onclick="setSort('name')">Nome <span id="th-name">↕</span></th>
+                <th onclick="setSort('size')" style="width:140px">Tamanho <span id="th-size">↕</span></th>
+                <th>Tipo</th>
+                <th onclick="setSort('date')" class="date-muted">Modificado <span id="th-date">↕</span></th>
+              </tr></thead>
+              <tbody id="fb-tbody"></tbody>
+            </table>
+            <div id="fb-empty" class="empty-state" style="display:none">Nenhum item encontrado</div>
+            <div id="fb-loading" class="loading" style="display:none">Carregando...</div>
+          </div>
+        </div>
+
+        <!-- side panels -->
+        <div class="fb-side">
+          <div class="fb-panel">
+            <h3>🏆 Maiores arquivos</h3>
+            <div id="fb-largest"><p style="font-size:.72rem;color:var(--muted)">Clique em uma pasta para analisar</p></div>
+          </div>
+          <div class="fb-panel">
+            <h3>📊 Por extensão</h3>
+            <canvas id="extPieChart" height="140"></canvas>
+            <div id="fb-ext-list" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ CLEANER ════ -->
+    <div id="page-cleaner" class="page">
+
+      <!-- hero -->
+      <div class="cl-hero">
+        <div>
+          <div class="cl-hero-title">🧹 Limpeza do Sistema</div>
+          <div class="cl-hero-sub">Escaneie e remova arquivos temporários, cache e lixo do sistema com segurança.</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn btn-ghost" id="cl-btn-scan" onclick="cleanerScan()">🔍 Analisar</button>
+          <button class="btn btn-primary" id="cl-btn-clean" onclick="cleanerConfirm()" style="display:none">🗑️ Limpar Selecionados</button>
+        </div>
+      </div>
+
+      <!-- resultado do scan -->
+      <div id="cl-scan-state" class="cl-idle-msg">Clique em <b>Analisar</b> para escanear o sistema.</div>
+
+      <!-- categorias -->
+      <div id="cl-categories" style="display:none">
+        <div class="cl-select-bar">
+          <label><input type="checkbox" id="cl-select-all" onchange="cleanerToggleAll(this.checked)"> Selecionar todos</label>
+          <span id="cl-total-selected" style="margin-left:auto;font-size:.75rem;color:var(--muted)"></span>
+        </div>
+        <div id="cl-cat-list"></div>
+      </div>
+
+      <!-- modal de detalhes -->
+      <div id="cl-detail-modal" style="display:none;position:fixed;inset:0;background:#000b;z-index:200;
+           align-items:center;justify-content:center">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+                    width:min(860px,95vw);max-height:85vh;display:flex;flex-direction:column;
+                    box-shadow:0 32px 100px #000">
+          <!-- header -->
+          <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0">
+            <span id="cdm-icon" style="font-size:1.4rem"></span>
+            <div style="flex:1">
+              <div id="cdm-title" style="font-size:.95rem;font-weight:700"></div>
+              <div id="cdm-meta" style="font-size:.72rem;color:var(--muted);margin-top:2px"></div>
+            </div>
+            <button class="btn btn-ghost" onclick="document.getElementById('cl-detail-modal').style.display='none'"
+              style="padding:4px 10px">✕ Fechar</button>
+          </div>
+          <!-- toolbar -->
+          <div style="padding:10px 22px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-shrink:0">
+            <input type="text" id="cdm-search" placeholder="🔍 Filtrar por nome ou extensão..."
+              style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+                     padding:6px 12px;border-radius:7px;font-size:.78rem"
+              oninput="cdmRender()">
+            <select id="cdm-sort" class="fb-select" onchange="cdmRender()">
+              <option value="size">Maior tamanho</option>
+              <option value="name">Nome A-Z</option>
+              <option value="date">Mais recente</option>
+            </select>
+          </div>
+          <!-- list -->
+          <div style="overflow-y:auto;flex:1;padding:0">
+            <table style="width:100%;border-collapse:collapse;font-size:.76rem">
+              <thead style="position:sticky;top:0;background:var(--bg)">
+                <tr>
+                  <th style="padding:8px 22px;text-align:left;color:var(--muted);font-weight:500;
+                             font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;width:99%">Arquivo</th>
+                  <th style="padding:8px 14px;text-align:right;color:var(--muted);font-weight:500;
+                             font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Tamanho</th>
+                  <th style="padding:8px 22px 8px 0;color:var(--muted);font-weight:500;
+                             font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Modificado</th>
+                </tr>
+              </thead>
+              <tbody id="cdm-tbody"></tbody>
+            </table>
+            <div id="cdm-truncated" style="display:none;padding:12px 22px;font-size:.72rem;
+                 color:var(--yellow);text-align:center"></div>
+          </div>
+          <!-- footer -->
+          <div style="padding:14px 22px;border-top:1px solid var(--border);flex-shrink:0;
+               display:flex;align-items:center;gap:12px">
+            <span id="cdm-count" style="font-size:.75rem;color:var(--muted)"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- modal de confirmação -->
+      <div id="cl-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:100;
+           display:none;align-items:center;justify-content:center">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+                    padding:28px;max-width:420px;width:90%;box-shadow:0 24px 80px #000">
+          <div style="font-size:1.1rem;font-weight:700;margin-bottom:8px">⚠️ Confirmar Limpeza</div>
+          <div id="cl-modal-body" style="font-size:.82rem;color:var(--muted2);margin-bottom:20px;line-height:1.6"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn btn-ghost" onclick="document.getElementById('cl-modal').style.display='none'">Cancelar</button>
+            <button class="btn" style="background:var(--red);color:#fff" onclick="cleanerExecute()">Confirmar e Limpar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- resultado da limpeza -->
+      <div id="cl-result" style="display:none" class="cl-result-box"></div>
+
+    </div>
+
+    <!-- ════ NETWORK ════ -->
+    <div id="page-network" class="page">
+
+      <!-- stats cards -->
+      <div class="ap-stats" id="net-stats-row">
+        <div class="ap-stat">
+          <div class="ap-stat-val" id="net-ifaces-up" style="color:var(--green)">—</div>
+          <div class="ap-stat-lbl">Interfaces ativas</div>
+        </div>
+        <div class="ap-stat">
+          <div class="ap-stat-val" id="net-speed-down" style="color:var(--accent)">—</div>
+          <div class="ap-stat-lbl">↓ Download</div>
+        </div>
+        <div class="ap-stat">
+          <div class="ap-stat-val" id="net-speed-up" style="color:var(--accent2)">—</div>
+          <div class="ap-stat-lbl">↑ Upload</div>
+        </div>
+        <div class="ap-stat">
+          <div class="ap-stat-val" id="net-conn-count">—</div>
+          <div class="ap-stat-lbl">Conexões ativas</div>
+        </div>
+      </div>
+
+      <!-- live traffic chart -->
+      <div class="chart-card" style="margin-bottom:14px">
+        <h3>Tráfego em tempo real <span id="net-chart-lbl" style="float:right;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2)"></span></h3>
+        <canvas id="netTrafficChart" height="80"></canvas>
+      </div>
+
+      <!-- interface cards -->
+      <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Interfaces</div>
+      <div class="net-iface-grid" id="net-iface-grid"></div>
+
+      <!-- connections -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Conexões</div>
+        <input id="net-conn-search" type="text" placeholder="Filtrar endereço ou porta..."
+          style="flex:1;max-width:300px;background:var(--surface2);border:1px solid var(--border);
+                 color:var(--text);padding:6px 12px;border-radius:8px;font-size:.77rem"
+          oninput="netRenderConns()">
+        <select class="fb-select" id="net-conn-status" onchange="netRenderConns()">
+          <option value="">Todos os status</option>
+          <option value="ESTABLISHED">ESTABLISHED</option>
+          <option value="LISTEN">LISTEN</option>
+          <option value="TIME_WAIT">TIME_WAIT</option>
+          <option value="CLOSE_WAIT">CLOSE_WAIT</option>
+        </select>
+      </div>
+      <div class="conn-table-wrap">
+        <table>
+          <thead><tr>
+            <th>Tipo</th>
+            <th>Endereço Local</th>
+            <th>Endereço Remoto</th>
+            <th>Status</th>
+            <th>PID</th>
+          </tr></thead>
+          <tbody id="net-conn-tbody"></tbody>
+        </table>
+        <div id="net-conn-empty" class="empty-state" style="display:none">Nenhuma conexão encontrada.</div>
+      </div>
+
+    </div>
+
+    <!-- ════ APPS ════ -->
+    <div id="page-apps" class="page">
+
+      <!-- stats bar -->
+      <div class="ap-stats" id="ap-stats">
+        <div class="ap-stat"><div class="ap-stat-val" id="ap-total">—</div><div class="ap-stat-lbl">Aplicativos</div></div>
+        <div class="ap-stat"><div class="ap-stat-val" id="ap-running-count">—</div><div class="ap-stat-lbl">Em execução</div></div>
+        <div class="ap-stat"><div class="ap-stat-val" id="ap-total-size">—</div><div class="ap-stat-lbl">Tamanho total em disco</div></div>
+        <div class="ap-stat"><div class="ap-stat-val" id="ap-visible">—</div><div class="ap-stat-lbl">Exibidos</div></div>
+      </div>
+
+      <!-- toolbar -->
+      <div class="ap-toolbar">
+        <input id="ap-search" type="text" placeholder="🔍 Filtrar por nome ou publisher..." oninput="apRender()">
+        <select class="fb-select" id="ap-filter-run" onchange="apRender()">
+          <option value="">Todos</option>
+          <option value="running">Em execução</option>
+          <option value="stopped">Parado</option>
+        </select>
+        <select class="fb-select" id="ap-sort" onchange="apRender()">
+          <option value="name">Nome A–Z</option>
+          <option value="size-desc">Maior tamanho</option>
+          <option value="size-asc">Menor tamanho</option>
+          <option value="date-desc">Instalado recente</option>
+          <option value="date-asc">Instalado antigo</option>
+          <option value="used-desc">Usado recente</option>
+        </select>
+        <button class="btn btn-ghost" onclick="apLoad()" id="ap-btn-reload">↺ Recarregar</button>
+      </div>
+
+      <!-- table -->
+      <div class="fb-table-wrap" id="ap-wrap">
+        <div class="loading" id="ap-loading" style="display:none">Carregando lista de aplicativos...</div>
+        <table id="ap-table">
+          <thead><tr>
+            <th style="width:99%">Aplicativo</th>
+            <th style="min-width:100px">Tamanho</th>
+            <th style="min-width:110px">Instalado</th>
+            <th style="min-width:110px">Último uso</th>
+            <th style="min-width:110px">Status</th>
+          </tr></thead>
+          <tbody id="ap-tbody"></tbody>
+        </table>
+        <div id="ap-empty" class="empty-state" style="display:none">Nenhum aplicativo encontrado.</div>
+        <div id="ap-idle" class="empty-state">Clique em <b>Recarregar</b> ou navegue até esta aba para carregar.</div>
+      </div>
+
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════════════════
+function clr(p){return p<60?'#22c55e':p<85?'#f59e0b':'#ef4444'}
+function fmtSize(b){const u=['B','KB','MB','GB','TB'];let i=0;while(b>=1024&&i<4){b/=1024;i++}return[b.toFixed(b<10?2:1),u[i]]}
+function fmtSizeStr(b){const[v,u]=fmtSize(b);return v+' '+u}
+
+// size slider label (0-100 → 0B to 1GB)
+function sizeLabel(v){
+  const bytes=Math.pow(v/100,3)*1024*1024*1024;
+  if(bytes<1024)return'0 B';
+  return fmtSizeStr(Math.round(bytes));
+}
+function sliderToBytes(v){return Math.pow(v/100,3)*1024*1024*1024}
+
+// ══════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════════════
+const PAGE_TITLES={'overview':'Visão Geral','history':'Histórico','files':'Explorador de Arquivos','cleaner':'Limpeza do Sistema','apps':'Aplicativos Instalados','network':'Redes & Conexões'};
+
+function goto(name){
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  document.querySelector(`.nav-item[onclick*="${name}"]`).classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('topbar-title').textContent=PAGE_TITLES[name]||name;
+  if(name==='files'&&!fbData) fbNavigate('C:\\');
+  if(name==='history'){loadDiskHistory();loadRamHistory();loadCpuHistory();}
+  if(name==='apps'&&!apData) apLoad();
+  if(name==='network') netStart();
+  if(name!=='network') netStop();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// LIVE METRICS
+// ══════════════════════════════════════════════════════════════════════
+let diskBarChart=null,ramChart=null,sparkCharts={};
+const SPARK_HISTORY={cpu:[],ram:[]};
+
+function renderMetricCards(disks,ram,cpu,sys){
+  const c=document.getElementById('metric-cards');
+  c.innerHTML='';
+
+  // CPU card with gauge
+  const cpuColor=clr(cpu.percent);
+  c.innerHTML+=`<div class="metric-card blue">
+    <div class="mc-label">⚡ CPU</div>
+    <div class="mc-value" style="color:${cpuColor}">${cpu.percent.toFixed(1)}<span style="font-size:.9rem">%</span></div>
+    <div class="mc-sub">${cpu.count} cores · ${cpu.freq} MHz</div>
+    <div class="mc-bar"><div class="mc-bar-fill" style="width:${cpu.percent}%;background:${cpuColor}"></div></div>
+  </div>`;
+
+  // RAM
+  const ramColor=clr(ram.percent);
+  c.innerHTML+=`<div class="metric-card purple">
+    <div class="mc-label">🧠 RAM</div>
+    <div class="mc-value" style="color:${ramColor}">${ram.percent}<span style="font-size:.9rem">%</span></div>
+    <div class="mc-sub">${ram.used_gb} GB usados de ${ram.total_gb} GB</div>
+    <div class="mc-bar"><div class="mc-bar-fill" style="width:${ram.percent}%;background:${ramColor}"></div></div>
+  </div>`;
+
+  // disks
+  disks.forEach(d=>{
+    const dc=clr(d.percent);
+    c.innerHTML+=`<div class="metric-card ${d.percent<60?'green':d.percent<85?'yellow':'red'}">
+      <div class="mc-label">💾 ${d.mountpoint}</div>
+      <div class="mc-value" style="color:${dc}">${d.percent}<span style="font-size:.9rem">%</span></div>
+      <div class="mc-sub">${d.free_gb} GB livres de ${d.total_gb} GB</div>
+      <div class="mc-bar"><div class="mc-bar-fill" style="width:${d.percent}%;background:${dc}"></div></div>
+    </div>`;
+  });
+
+  // uptime/net
+  c.innerHTML+=`<div class="metric-card blue">
+    <div class="mc-label">🕐 Uptime</div>
+    <div class="mc-value" style="font-size:1.2rem;color:var(--accent)">${sys.uptime}</div>
+    <div class="mc-sub">${sys.processes} processos</div>
+    <div class="mc-sub" style="margin-top:4px">▲ ${sys.net_sent_mb} MB  ▼ ${sys.net_recv_mb} MB</div>
+  </div>`;
+}
+
+function renderDiskBar(disks){
+  const labels=disks.map(d=>d.mountpoint);
+  const used=disks.map(d=>d.used_gb);
+  const free=disks.map(d=>d.free_gb);
+  const maxY=Math.ceil(Math.max(...disks.map(d=>d.total_gb))*1.05);
+  if(diskBarChart){
+    diskBarChart.data.labels=labels;
+    diskBarChart.data.datasets[0].data=used;
+    diskBarChart.data.datasets[1].data=free;
+    diskBarChart.options.scales.y.max=maxY;
+    diskBarChart.update('none');
+  } else {
+    diskBarChart=new Chart(document.getElementById('diskBarChart'),{
+      type:'bar',
+      data:{labels,datasets:[
+        {label:'Usado (GB)',data:used,backgroundColor:'#4f9eff88',borderColor:'#4f9eff',borderWidth:1},
+        {label:'Livre (GB)',data:free,backgroundColor:'#22c55e44',borderColor:'#22c55e',borderWidth:1},
+      ]},
+      options:{responsive:true,animation:{duration:400},
+        plugins:{legend:{labels:{color:'#5a7090'}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y} GB`}}},
+        scales:{
+          x:{stacked:true,ticks:{color:'#5a7090'},grid:{color:'#1e2d45'}},
+          y:{stacked:true,max:maxY,ticks:{color:'#5a7090',callback:v=>v+' GB'},grid:{color:'#1e2d45'}}
+        }
+      }
+    });
+  }
+}
+
+function renderRam(ram){
+  const data=[ram.used_gb,ram.free_gb];
+  const title=`RAM — ${ram.percent}%  (${ram.used_gb}/${ram.total_gb} GB)`;
+  if(ramChart){
+    ramChart.data.labels=[`Usado ${ram.used_gb}GB`,`Livre ${ram.free_gb}GB`];
+    ramChart.data.datasets[0].data=data;
+    ramChart.data.datasets[0].backgroundColor=[clr(ram.percent)+'cc','#1e2d45'];
+    ramChart.options.plugins.title.text=title;
+    ramChart.update('none');
+  } else {
+    ramChart=new Chart(document.getElementById('ramChart'),{
+      type:'doughnut',
+      data:{labels:[`Usado ${ram.used_gb}GB`,`Livre ${ram.free_gb}GB`],
+            datasets:[{data,backgroundColor:[clr(ram.percent)+'cc','#1e2d45'],borderWidth:0}]},
+      options:{responsive:true,cutout:'72%',animation:{duration:400},
+        plugins:{legend:{position:'bottom',labels:{color:'#5a7090',boxWidth:10,padding:10}},
+                 title:{display:true,text:title,color:'#5a7090',font:{size:11}}}}
+    });
+  }
+}
+
+function renderCpuCores(cpu){
+  const wrap=document.getElementById('cpu-cores');
+  wrap.innerHTML=cpu.cores.map((p,i)=>{
+    const c=clr(p);
+    return`<div style="flex:1;min-width:80px;max-width:120px;background:var(--surface2);border:1px solid var(--border);
+                border-radius:8px;padding:10px 12px">
+      <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">Core ${i}</div>
+      <div style="font-size:1rem;font-weight:700;color:${c}">${p.toFixed(0)}%</div>
+      <div style="height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden">
+        <div style="height:100%;width:${p}%;background:${c};border-radius:2px;transition:width .4s"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function tickLive(){
+  try{
+    const [disks,ram,cpu,sys]=await Promise.all([
+      fetch('/api/disks').then(r=>r.json()),
+      fetch('/api/ram').then(r=>r.json()),
+      fetch('/api/cpu').then(r=>r.json()),
+      fetch('/api/system').then(r=>r.json()),
+    ]);
+
+    // topbar pills
+    document.getElementById('tp-cpu').textContent=cpu.percent.toFixed(0)+'%';
+    document.getElementById('tp-ram').textContent=ram.percent+'%';
+    document.getElementById('tp-up').textContent=sys.uptime;
+    document.getElementById('tp-proc').textContent=sys.processes;
+
+    renderMetricCards(disks,ram,cpu,sys);
+    renderDiskBar(disks);
+    renderRam(ram);
+    renderCpuCores(cpu);
+
+    // history select
+    const sel=document.getElementById('histMount');
+    const cur=sel.value;
+    sel.innerHTML=disks.map(d=>`<option value="${d.mountpoint}">${d.mountpoint}</option>`).join('');
+    if(cur)sel.value=cur;
+
+    const now=new Date().toLocaleTimeString('pt-BR');
+    document.getElementById('last-update').textContent=`Atualizado ${now}`;
+  } catch(e){document.getElementById('last-update').textContent='Erro de conexão';}
+}
+
+tickLive();
+setInterval(tickLive,5000);
+
+// ══════════════════════════════════════════════════════════════════════
+// HISTORY CHARTS
+// ══════════════════════════════════════════════════════════════════════
+let histDiskGB=null,histDiskPct=null,histRamChart=null,histCpuChart=null;
+
+function mkLineOpts(yCallback){
+  return{
+    responsive:true,animation:{duration:300},
+    interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#5a7090',maxTicksLimit:15},grid:{color:'#1e2d45'}},
+      y:{ticks:{color:'#5a7090',callback:yCallback},grid:{color:'#1e2d45'}}
+    }
+  };
+}
+
+async function loadDiskHistory(){
+  const mount=document.getElementById('histMount').value;
+  const limit=document.getElementById('histLimit').value;
+  if(!mount)return;
+  const rows=await fetch(`/api/history/disks?mountpoint=${encodeURIComponent(mount)}&limit=${limit}`).then(r=>r.json());
+  if(!rows.length)return;
+  rows.reverse();
+  const labels=rows.map(r=>r.ts.slice(11,16));
+  const used=rows.map(r=>r.used_gb);
+  const pct=rows.map(r=>r.percent);
+
+  // Gráfico GB
+  if(histDiskGB){histDiskGB.destroy();histDiskGB=null;}
+  histDiskGB=new Chart(document.getElementById('histDiskGB'),{
+    type:'line',
+    data:{labels,datasets:[{label:'GB Usado',data:used,
+      borderColor:'#4f9eff',backgroundColor:'#4f9eff15',tension:.3,fill:true,pointRadius:2}]},
+    options:mkLineOpts(v=>v.toFixed(1)+' GB')
+  });
+
+  // Gráfico %  — eixo Y fixo 0–100, sem ambiguidade
+  if(histDiskPct){histDiskPct.destroy();histDiskPct=null;}
+  histDiskPct=new Chart(document.getElementById('histDiskPct'),{
+    type:'line',
+    data:{labels,datasets:[{label:'% Uso',data:pct,
+      borderColor:'#22c55e',backgroundColor:'#22c55e15',tension:.3,fill:true,pointRadius:2}]},
+    options:{
+      ...mkLineOpts(v=>v.toFixed(1)+'%'),
+      scales:{
+        x:{ticks:{color:'#5a7090',maxTicksLimit:15},grid:{color:'#1e2d45'}},
+        y:{min:0,max:100,ticks:{color:'#5a7090',callback:v=>v+'%'},grid:{color:'#1e2d45'}}
+      }
+    }
+  });
+}
+
+async function loadRamHistory(){
+  const rows=await fetch('/api/history/ram?limit=100').then(r=>r.json());
+  if(!rows.length)return;
+  rows.reverse();
+  const labels=rows.map(r=>r.ts.slice(11,16));
+  const pct=rows.map(r=>r.percent);
+  if(histRamChart){histRamChart.data.labels=labels;histRamChart.data.datasets[0].data=pct;histRamChart.update('none');}
+  else{
+    histRamChart=new Chart(document.getElementById('histRamChart'),{
+      type:'line',
+      data:{labels,datasets:[{label:'RAM %',data:pct,borderColor:'#7c5cfc',backgroundColor:'#7c5cfc20',
+            tension:.3,fill:true,pointRadius:2}]},
+      options:mkLineOpts('','%')
+    });
+  }
+}
+
+async function loadCpuHistory(){
+  const rows=await fetch('/api/history/cpu?limit=100').then(r=>r.json());
+  if(!rows.length)return;
+  rows.reverse();
+  const labels=rows.map(r=>r.ts.slice(11,16));
+  const pct=rows.map(r=>r.percent);
+  if(histCpuChart){histCpuChart.data.labels=labels;histCpuChart.data.datasets[0].data=pct;histCpuChart.update('none');}
+  else{
+    histCpuChart=new Chart(document.getElementById('histCpuChart'),{
+      type:'line',
+      data:{labels,datasets:[{label:'CPU %',data:pct,borderColor:'#f59e0b',backgroundColor:'#f59e0b15',
+            tension:.3,fill:true,pointRadius:2}]},
+      options:mkLineOpts('','%')
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// FILE BROWSER
+// ══════════════════════════════════════════════════════════════════════
+let fbData=null;
+let fbPath='C:\\';
+let fbSortKey='type',fbSortDir='asc';
+let fbChips={dot:true,files:false,dirs:false};
+let extPieChart=null;
+
+const EXT_COLORS=['#4f9eff','#7c5cfc','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#a3e635','#fb923c','#a78bfa'];
+
+const ICONS={
+  dir:'📁',pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📑',pptx:'📑',
+  jpg:'🖼',jpeg:'🖼',png:'🖼',gif:'🖼',webp:'🖼',svg:'🖼',
+  mp4:'🎬',mkv:'🎬',avi:'🎬',mov:'🎬',mp3:'🎵',wav:'🎵',flac:'🎵',
+  zip:'🗜',rar:'🗜','7z':'🗜',tar:'🗜',gz:'🗜',
+  exe:'⚙️',msi:'⚙️',py:'🐍',js:'📜',ts:'📜',html:'🌐',css:'🎨',
+  json:'🔧',yaml:'🔧',xml:'🔧',md:'📋',txt:'📋',sh:'⚡',bat:'⚡',ps1:'⚡',
+  iso:'💿',db:'🗄',sqlite:'🗄',csv:'📊',
+};
+function getIcon(e){return e.type==='dir'?ICONS.dir:ICONS[e.ext]||'📄'}
+
+function toggleChip(name){
+  if(name==='files'&&fbChips.dirs)fbChips.dirs=false;
+  if(name==='dirs'&&fbChips.files)fbChips.files=false;
+  fbChips[name]=!fbChips[name];
+  document.getElementById('chip-'+name).classList.toggle('on',fbChips[name]);
+  if(name==='files')document.getElementById('chip-dirs').classList.toggle('on',fbChips.dirs);
+  if(name==='dirs')document.getElementById('chip-files').classList.toggle('on',fbChips.files);
+  fbRender();
+}
+
+function setSort(key){
+  if(fbSortKey===key) fbSortDir=fbSortDir==='asc'?'desc':'asc';
+  else{fbSortKey=key;fbSortDir=key==='size'||key==='date'?'desc':'asc';}
+  document.getElementById('fb-sort').value=fbSortKey+'-'+fbSortDir;
+  fbRender();
+  ['name','size','date'].forEach(k=>{
+    const el=document.getElementById('th-'+k);
+    if(el)el.textContent=k===fbSortKey?(fbSortDir==='asc'?'↑':'↓'):'↕';
+  });
+}
+
+async function fbNavigate(path){
+  document.getElementById('fb-loading').style.display='';
+  document.getElementById('fb-tbody').innerHTML='';
+  document.getElementById('fb-empty').style.display='none';
+  fbPath=path;
+  try{
+    const r=await fetch('/api/files?path='+encodeURIComponent(path));
+    if(!r.ok){alert('Sem acesso: '+path);return;}
+    fbData=await r.json();
+    fbRenderDrives();
+    fbRenderBreadcrumb();
+    fbRenderExtFilter();
+    fbRender();
+    fbLoadSide();
+  } catch(e){alert('Erro: '+e);}
+  finally{document.getElementById('fb-loading').style.display='none';}
+}
+
+function fbUp(){if(fbData?.parent)fbNavigate(fbData.parent);}
+
+function fbRenderDrives(){
+  document.getElementById('fb-drives').innerHTML=(fbData.drives||[]).map(d=>
+    `<div class="drive-chip ${fbPath.startsWith(d)?'active':''}" onclick="fbNavigate('${d}')">${d}</div>`
+  ).join('');
+}
+
+function fbRenderBreadcrumb(){
+  const parts=fbPath.replace(/\\/g,'/').split('/').filter(Boolean);
+  let html='',acc='';
+  parts.forEach((p,i)=>{
+    acc+=i===0?p+'\\':p+'\\';
+    const snap=acc;
+    html+=`<span class="crumb" onclick="fbNavigate('${snap.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${p}</span>`;
+    if(i<parts.length-1)html+=`<span class="crumb-sep">/</span>`;
+  });
+  document.getElementById('fb-breadcrumb').innerHTML=html||fbPath;
+}
+
+function fbRenderExtFilter(){
+  const sel=document.getElementById('fb-ext'),cur=sel.value;
+  const exts=[...new Set((fbData.entries||[]).filter(e=>e.ext).map(e=>e.ext))].sort();
+  sel.innerHTML=`<option value="">Todos os tipos</option>`+
+    exts.map(e=>`<option value="${e}" ${e===cur?'selected':''}>.${e}</option>`).join('');
+}
+
+function fbRender(){
+  if(!fbData)return;
+  const q=document.getElementById('fb-search').value.toLowerCase();
+  const ext=document.getElementById('fb-ext').value;
+  const sort=document.getElementById('fb-sort').value;
+  const dayFilter=parseInt(document.getElementById('fb-date-filter').value)||0;
+  const minBytes=sliderToBytes(document.getElementById('fb-size-min').value);
+
+  let entries=[...(fbData.entries||[])];
+
+  // filters
+  if(q)         entries=entries.filter(e=>e.name.toLowerCase().includes(q));
+  if(ext)       entries=entries.filter(e=>e.ext===ext);
+  if(fbChips.dot) entries=entries.filter(e=>!e.name.startsWith('.'));
+  if(fbChips.files) entries=entries.filter(e=>e.type==='file');
+  if(fbChips.dirs)  entries=entries.filter(e=>e.type==='dir');
+  if(minBytes>0)entries=entries.filter(e=>e.size_bytes>=minBytes||e.type==='dir');
+  if(dayFilter>0){
+    const cutoff=Date.now()/1000 - dayFilter*86400;
+    entries=entries.filter(e=>e.modified_ts>=cutoff);
+  }
+
+  // sort
+  const[sk,sd]=sort.includes('-')?sort.split('-'):[fbSortKey,fbSortDir];
+  entries.sort((a,b)=>{
+    if(sort==='type'){
+      if(a.type!==b.type)return a.type==='dir'?-1:1;
+      return a.name.localeCompare(b.name);
+    }
+    let va=sk==='size'?a.size_bytes:sk==='date'?a.modified_ts:a.name.toLowerCase();
+    let vb=sk==='size'?b.size_bytes:sk==='date'?b.modified_ts:b.name.toLowerCase();
+    if(va<vb)return sd==='asc'?-1:1;
+    if(va>vb)return sd==='asc'?1:-1;
+    return 0;
+  });
+
+  // summary
+  const fcount=entries.filter(e=>e.type==='file').length;
+  const dcount=entries.filter(e=>e.type==='dir').length;
+  const total=entries.filter(e=>e.type==='file').reduce((s,e)=>s+e.size_bytes,0);
+  document.getElementById('fb-summary').innerHTML=
+    `<span><b>${dcount}</b> pastas</span><span><b>${fcount}</b> arquivos</span><span>Total visível: <b>${fmtSizeStr(total)}</b></span>`;
+
+  // max size for bars
+  const maxSize=Math.max(...entries.filter(e=>e.type==='file').map(e=>e.size_bytes),1);
+
+  const tbody=document.getElementById('fb-tbody');
+  const empty=document.getElementById('fb-empty');
+  if(!entries.length){tbody.innerHTML='';empty.style.display='';return;}
+  empty.style.display='none';
+
+  tbody.innerHTML=entries.map(e=>{
+    const ic=getIcon(e);
+    const pEsc=e.path.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const nameCell=`<div class="fb-name-cell" onclick="${e.type==='dir'?`fbNavigate('${pEsc}')`:''}" >
+      <span class="fb-icon">${ic}</span>
+      <span class="fb-name-text" title="${e.name}">${e.name}</span>
+    </div>`;
+
+    const barW=e.type==='file'?Math.max(2,Math.round(e.size_bytes/maxSize*60)):0;
+    const barColor=e.size_bytes>500*1024*1024?'#ef4444':e.size_bytes>50*1024*1024?'#f59e0b':'#4f9eff';
+    const sizeCell=e.type==='dir'
+      ?`<td><span style="color:var(--muted)">—</span></td>`
+      :`<td><div class="size-bar-wrap">
+          <div class="size-bar" style="width:${barW}px;background:${barColor}"></div>
+          <span class="size-num">${e.size_val}<span class="size-unit-sm">${e.size_unit}</span></span>
+        </div></td>`;
+
+    const extBadge=e.type==='file'&&e.ext?`<span class="badge-ext">.${e.ext}</span>`:'';
+    return`<tr>
+      <td>${nameCell}</td>
+      ${sizeCell}
+      <td>${extBadge}</td>
+      <td class="date-muted">${e.modified}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function fbLoadSide(){
+  // largest files
+  const wrap=document.getElementById('fb-largest');
+  wrap.innerHTML='<p style="font-size:.72rem;color:var(--muted)">Analisando...</p>';
+  try{
+    const files=await fetch(`/api/files/largest?path=${encodeURIComponent(fbPath)}&limit=8`).then(r=>r.json());
+    if(!files.length){wrap.innerHTML='<p style="font-size:.72rem;color:var(--muted)">Nenhum arquivo</p>';return;}
+    const max=files[0].size_bytes;
+    wrap.innerHTML=files.map(f=>`
+      <div class="top-file-item">
+        <div style="flex:1;min-width:0">
+          <div class="tfi-name" title="${f.path}">${ICONS[f.ext]||'📄'} ${f.name}</div>
+          <div class="tfi-bar-wrap"><div class="tfi-bar" style="width:${Math.round(f.size_bytes/max*100)}%"></div></div>
+        </div>
+        <div class="tfi-size">${f.size_val}<span style="font-size:.65rem;color:var(--muted)">${f.size_unit}</span></div>
+      </div>`).join('');
+  } catch{wrap.innerHTML='<p style="font-size:.72rem;color:var(--muted)">Erro</p>';}
+
+  // ext stats + pie
+  try{
+    const stats=await fetch(`/api/files/ext-stats?path=${encodeURIComponent(fbPath)}`).then(r=>r.json());
+    if(!stats.length)return;
+    const top=stats.slice(0,8);
+    const maxB=top[0].size_bytes||1;
+
+    // pie chart
+    if(extPieChart){
+      extPieChart.data.labels=top.map(s=>'.'+s.ext);
+      extPieChart.data.datasets[0].data=top.map(s=>s.size_bytes);
+      extPieChart.update('none');
+    } else {
+      extPieChart=new Chart(document.getElementById('extPieChart'),{
+        type:'doughnut',
+        data:{labels:top.map(s=>'.'+s.ext),
+              datasets:[{data:top.map(s=>s.size_bytes),backgroundColor:EXT_COLORS,borderWidth:0}]},
+        options:{responsive:true,cutout:'60%',
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${fmtSizeStr(c.raw)}`}}}}
+      });
+    }
+
+    document.getElementById('fb-ext-list').innerHTML=top.map((s,i)=>`
+      <div class="ext-item">
+        <div class="ext-dot" style="background:${EXT_COLORS[i%EXT_COLORS.length]}"></div>
+        <div class="ext-name">.${s.ext}</div>
+        <div class="ext-bar-bg"><div class="ext-bar-fill" style="width:${Math.round(s.size_bytes/maxB*100)}%;background:${EXT_COLORS[i%EXT_COLORS.length]}"></div></div>
+        <div class="ext-size">${s.size_val}${s.size_unit}</div>
+      </div>`).join('');
+  } catch{}
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// CLEANER
+// ══════════════════════════════════════════════════════════════════════
+let clScanData = [];
+const PAGE_TITLES_EXTRA = { cleaner: 'Limpeza do Sistema' };
+
+async function cleanerScan() {
+  document.getElementById('cl-result').style.display = 'none';
+  document.getElementById('cl-categories').style.display = 'none';
+  document.getElementById('cl-scan-state').innerHTML =
+    '<div class="cl-scanning"><span class="cl-scanning-dot">⟳</span><br><br>Escaneando o sistema...</div>';
+
+  document.getElementById('cl-btn-scan').disabled = true;
+  try {
+    const res = await fetch('/api/cleaner/scan');
+    clScanData = await res.json();
+    cleanerRender();
+  } catch(e) {
+    document.getElementById('cl-scan-state').innerHTML =
+      `<div class="cl-idle-msg" style="color:var(--red)">Erro ao escanear: ${e}</div>`;
+  }
+  document.getElementById('cl-btn-scan').disabled = false;
+}
+
+function cleanerRender() {
+  const list  = document.getElementById('cl-cat-list');
+  const maxSz = Math.max(...clScanData.map(c => c.size_bytes), 1);
+
+  list.innerHTML = clScanData.map(cat => {
+    const isEmpty   = cat.size_bytes === 0 || !cat.exists;
+    const barW      = Math.round(cat.size_bytes / maxSz * 100);
+    const barColor  = cat.size_bytes > 500*1024*1024 ? 'var(--red)'
+                    : cat.size_bytes > 50*1024*1024  ? 'var(--yellow)'
+                    : 'var(--accent)';
+    return `
+    <div class="cl-cat-card ${isEmpty ? 'empty' : ''}" id="clcard-${cat.id}"
+         onclick="${isEmpty ? '' : `cleanerToggle('${cat.id}')`}">
+      <input type="checkbox" class="cl-cat-check" id="clchk-${cat.id}"
+             ${isEmpty ? 'disabled' : ''} onchange="cleanerUpdateTotal()" onclick="event.stopPropagation()">
+      <div class="cl-cat-icon">${cat.icon}</div>
+      <div class="cl-cat-info">
+        <div class="cl-cat-label">${cat.label}</div>
+        <div class="cl-size-bar">
+          <div class="cl-size-fill" style="width:${barW}%;background:${barColor}"></div>
+        </div>
+        <div class="cl-cat-meta">${cat.count} arquivo${cat.count!==1?'s':''} encontrado${cat.count!==1?'s':''}</div>
+      </div>
+      <div class="cl-cat-size">
+        <div class="cl-cat-size-val" style="color:${isEmpty?'var(--muted)':barColor}">${cat.size_val}</div>
+        <span class="cl-cat-size-unit">${cat.size_unit}</span>
+      </div>
+      ${!isEmpty ? `<button class="msg-btn" title="Ver arquivos"
+        onclick="event.stopPropagation();cleanerDetail('${cat.id}')"
+        style="margin-left:8px;font-size:.8rem;padding:5px 10px">🔍 Ver</button>` : ''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('cl-scan-state').innerHTML = '';
+  document.getElementById('cl-categories').style.display = '';
+  cleanerUpdateTotal();
+}
+
+function cleanerToggle(id) {
+  const chk = document.getElementById('clchk-' + id);
+  if (chk.disabled) return;
+  chk.checked = !chk.checked;
+  document.getElementById('clcard-' + id).classList.toggle('selected', chk.checked);
+  cleanerUpdateTotal();
+}
+
+function cleanerToggleAll(checked) {
+  clScanData.forEach(cat => {
+    const chk = document.getElementById('clchk-' + cat.id);
+    if (chk && !chk.disabled) {
+      chk.checked = checked;
+      document.getElementById('clcard-' + cat.id).classList.toggle('selected', checked);
+    }
+  });
+  cleanerUpdateTotal();
+}
+
+function cleanerUpdateTotal() {
+  const selected = cleanerSelected();
+  const total    = selected.reduce((s, id) => {
+    const cat = clScanData.find(c => c.id === id);
+    return s + (cat ? cat.size_bytes : 0);
+  }, 0);
+  const [v, u] = fmtSize(total);
+  const btn = document.getElementById('cl-btn-clean');
+  if (selected.length > 0) {
+    btn.style.display = '';
+    document.getElementById('cl-total-selected').textContent =
+      `${selected.length} categoria${selected.length>1?'s':''} selecionada${selected.length>1?'s':''} — ${v} ${u} para liberar`;
+  } else {
+    btn.style.display = 'none';
+    document.getElementById('cl-total-selected').textContent = '';
+  }
+}
+
+function cleanerSelected() {
+  return clScanData
+    .filter(c => { const el = document.getElementById('clchk-' + c.id); return el && el.checked; })
+    .map(c => c.id);
+}
+
+function cleanerConfirm() {
+  const selected = cleanerSelected();
+  if (!selected.length) return;
+  const total = selected.reduce((s, id) => {
+    const cat = clScanData.find(c => c.id === id);
+    return s + (cat ? cat.size_bytes : 0);
+  }, 0);
+  const [v, u] = fmtSize(total);
+  const labels = selected.map(id => clScanData.find(c => c.id === id)?.label).filter(Boolean);
+  document.getElementById('cl-modal-body').innerHTML =
+    `Você está prestes a deletar permanentemente:<br><br>` +
+    labels.map(l => `• ${l}`).join('<br>') +
+    `<br><br><b>Total estimado: ${v} ${u}</b><br><br>` +
+    `<span style="color:var(--red)">Esta ação não pode ser desfeita.</span>`;
+  document.getElementById('cl-modal').style.display = 'flex';
+}
+
+// ── detail modal ─────────────────────────────────────────────────────
+let cdmData = null;
+
+async function cleanerDetail(id) {
+  const modal = document.getElementById('cl-detail-modal');
+  modal.style.display = 'flex';
+  document.getElementById('cdm-title').textContent = 'Carregando...';
+  document.getElementById('cdm-meta').textContent  = '';
+  document.getElementById('cdm-tbody').innerHTML   = '<tr><td colspan="3" style="padding:40px;text-align:center;color:var(--muted)">⟳ Lendo arquivos...</td></tr>';
+
+  const res  = await fetch(`/api/cleaner/preview?id=${id}&limit=500`);
+  cdmData    = await res.json();
+
+  const cat  = clScanData.find(c => c.id === id);
+  document.getElementById('cdm-icon').textContent  = cat?.icon || '';
+  document.getElementById('cdm-title').textContent = cdmData.label;
+  document.getElementById('cdm-search').value      = '';
+  document.getElementById('cdm-sort').value        = 'size';
+
+  if (cdmData.truncated) {
+    document.getElementById('cdm-truncated').style.display = '';
+    document.getElementById('cdm-truncated').textContent =
+      `Exibindo os 500 maiores arquivos de ${cdmData.count} encontrados.`;
+  } else {
+    document.getElementById('cdm-truncated').style.display = 'none';
+  }
+  cdmRender();
+}
+
+function cdmRender() {
+  if (!cdmData) return;
+  const q    = document.getElementById('cdm-search').value.toLowerCase();
+  const sort = document.getElementById('cdm-sort').value;
+
+  let items = [...cdmData.items];
+  if (q) items = items.filter(f => f.name.toLowerCase().includes(q) || f.ext.includes(q));
+
+  if (sort === 'name') items.sort((a,b) => a.name.localeCompare(b.name));
+  else if (sort === 'date') items.sort((a,b) => b.modified.localeCompare(a.modified));
+  // default: size (already sorted desc from API)
+
+  const maxSz  = items[0]?.size_bytes || 1;
+  const ICONS  = {tmp:'🗑️',log:'📋',bak:'💾',db:'🗄',cache:'📦',zip:'🗜',gz:'🗜',
+                  png:'🖼',jpg:'🖼',mp4:'🎬',exe:'⚙️',dll:'⚙️',default:'📄'};
+  const getIco = ext => ICONS[ext] || ICONS.default;
+
+  document.getElementById('cdm-tbody').innerHTML = items.map(f => {
+    const barW  = Math.max(2, Math.round(f.size_bytes / maxSz * 80));
+    const color = f.size_bytes > 100*1024*1024 ? 'var(--red)'
+                : f.size_bytes > 10*1024*1024  ? 'var(--yellow)' : 'var(--accent)';
+    const shortPath = f.path.length > 70 ? '...' + f.path.slice(-67) : f.path;
+    return `<tr style="border-top:1px solid var(--border)">
+      <td style="padding:7px 22px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.85rem">${getIco(f.ext)}</span>
+          <div style="min-width:0">
+            <div style="font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:460px" title="${f.path}">${f.name}</div>
+            <div style="font-size:.65rem;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:460px" title="${f.path}">${shortPath}</div>
+            <div style="height:2px;background:var(--border);border-radius:1px;margin-top:4px;overflow:hidden;width:200px">
+              <div style="height:100%;width:${barW}%;background:${color};border-radius:1px"></div>
+            </div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:7px 14px;text-align:right;white-space:nowrap;font-weight:600;color:${color}">${f.size_val}<span style="font-size:.65rem;color:var(--muted);margin-left:2px">${f.size_unit}</span></td>
+      <td style="padding:7px 22px 7px 0;color:var(--muted);font-size:.7rem;white-space:nowrap">${f.modified}</td>
+    </tr>`;
+  }).join('');
+
+  const visTotal = items.reduce((s,f) => s+f.size_bytes, 0);
+  const [v,u]   = fmtSize(visTotal);
+  document.getElementById('cdm-meta').textContent =
+    `${cdmData.total_val} ${cdmData.total_unit} total · ${cdmData.count} arquivos`;
+  document.getElementById('cdm-count').textContent =
+    `${items.length} arquivo${items.length!==1?'s':''} visíveis · ${v} ${u}`;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// NETWORK
+// ══════════════════════════════════════════════════════════════════════
+let netPrev      = null;   // previous snapshot for speed calc
+let netConnsData = [];
+let netChart     = null;
+let netSpeedHist = { down: [], up: [], labels: [] };
+let netTimer     = null;
+const NET_MAX_PTS = 40;
+
+function netStart() {
+  if (netTimer) return;
+  netTick();
+  netTimer = setInterval(netTick, 2000);
+}
+function netStop() {
+  clearInterval(netTimer);
+  netTimer = null;
+}
+
+async function netTick() {
+  try {
+    const data = await fetch('/api/network').then(r => r.json());
+    netRenderInterfaces(data);
+    netUpdateChart(data);
+    netConnsData = data.connections || [];
+    netRenderConns();
+    document.getElementById('net-conn-count').textContent =
+      netConnsData.filter(c => c.status === 'ESTABLISHED').length;
+  } catch(e) {}
+}
+
+function netRenderInterfaces(data) {
+  const ifaces = data.interfaces || [];
+  const upCount = ifaces.filter(i => i.is_up).length;
+  document.getElementById('net-ifaces-up').textContent = upCount + ' / ' + ifaces.length;
+
+  document.getElementById('net-iface-grid').innerHTML = ifaces.map(iface => {
+    const cls   = iface.is_up ? 'up' : 'down';
+    const upBadge = iface.is_up
+      ? '<span style="font-size:.62rem;background:#22c55e22;color:#22c55e;border:1px solid #22c55e44;padding:1px 6px;border-radius:6px">ATIVO</span>'
+      : '<span style="font-size:.62rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border);padding:1px 6px;border-radius:6px">INATIVO</span>';
+    const addrRows = iface.addrs
+      .filter(a => a.addr && !a.addr.startsWith('%'))
+      .map(a => `<div class="net-addr-row">
+        <span class="net-addr-fam">${a.family}</span>
+        <span class="net-addr-val" title="${a.addr}">${a.addr}</span>
+      </div>`).join('');
+    const sent = fmtSizeStr(iface.bytes_sent);
+    const recv = fmtSizeStr(iface.bytes_recv);
+    const speedStr = iface.speed_mbps > 0 ? ` · ${iface.speed_mbps} Mbps` : '';
+    const mtuStr   = iface.mtu > 0 ? ` · MTU ${iface.mtu}` : '';
+    const errs     = (iface.errin + iface.errout + iface.dropin + iface.dropout);
+    const errsHtml = errs > 0
+      ? `<div style="font-size:.65rem;color:var(--red);margin-top:4px">⚠ Erros: ${errs}</div>` : '';
+    return `<div class="net-iface-card ${cls}">
+      <div class="net-iface-name">${iface.name} ${upBadge}</div>
+      <div class="net-iface-speed">${speedStr.slice(3)||'—'}${mtuStr}</div>
+      ${addrRows || '<div style="font-size:.72rem;color:var(--muted)">Sem endereço</div>'}
+      <div class="net-traffic-row">
+        <div class="net-traffic-item">
+          <div class="net-traffic-val" style="color:var(--accent)">▼ ${recv}</div>
+          <div class="net-traffic-lbl">Recebido</div>
+        </div>
+        <div class="net-traffic-item">
+          <div class="net-traffic-val" style="color:var(--accent2)">▲ ${sent}</div>
+          <div class="net-traffic-lbl">Enviado</div>
+        </div>
+        <div class="net-traffic-item">
+          <div class="net-traffic-val" style="color:var(--muted2)">${iface.packets_recv + iface.packets_sent}</div>
+          <div class="net-traffic-lbl">Pacotes</div>
+        </div>
+      </div>
+      ${errsHtml}
+    </div>`;
+  }).join('');
+}
+
+function netUpdateChart(data) {
+  const now = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  let downBps = 0, upBps = 0;
+
+  if (netPrev) {
+    const dt = data.ts - netPrev.ts;
+    if (dt > 0) {
+      downBps = Math.max(0, (data.total.bytes_recv - netPrev.bytes_recv) / dt);
+      upBps   = Math.max(0, (data.total.bytes_sent - netPrev.bytes_sent) / dt);
+    }
+  }
+  netPrev = { ts: data.ts, bytes_recv: data.total.bytes_recv, bytes_sent: data.total.bytes_sent };
+
+  document.getElementById('net-speed-down').textContent = fmtSizeStr(downBps) + '/s';
+  document.getElementById('net-speed-up').textContent   = fmtSizeStr(upBps)   + '/s';
+  document.getElementById('net-chart-lbl').textContent  =
+    `↓ ${fmtSizeStr(downBps)}/s  ↑ ${fmtSizeStr(upBps)}/s`;
+
+  netSpeedHist.down.push(downBps / 1024);   // KB/s
+  netSpeedHist.up.push(upBps   / 1024);
+  netSpeedHist.labels.push(now);
+  if (netSpeedHist.down.length > NET_MAX_PTS) {
+    netSpeedHist.down.shift(); netSpeedHist.up.shift(); netSpeedHist.labels.shift();
+  }
+
+  if (!netChart) {
+    netChart = new Chart(document.getElementById('netTrafficChart'), {
+      type: 'line',
+      data: {
+        labels: netSpeedHist.labels,
+        datasets: [
+          { label: '↓ Download (KB/s)', data: netSpeedHist.down,
+            borderColor: '#4f9eff', backgroundColor: '#4f9eff18', tension: .3, fill: true, pointRadius: 0 },
+          { label: '↑ Upload (KB/s)',   data: netSpeedHist.up,
+            borderColor: '#7c5cfc', backgroundColor: '#7c5cfc12', tension: .3, fill: true, pointRadius: 0 },
+        ]
+      },
+      options: {
+        responsive: true, animation: { duration: 200 },
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { labels: { color: '#5a7090', boxWidth: 10, padding: 12 } } },
+        scales: {
+          x: { ticks: { color: '#5a7090', maxTicksLimit: 8 }, grid: { color: '#1e2d45' } },
+          y: { ticks: { color: '#5a7090', callback: v => v.toFixed(0) + ' KB/s' }, grid: { color: '#1e2d45' }, min: 0 }
+        }
+      }
+    });
+  } else {
+    netChart.data.labels             = netSpeedHist.labels;
+    netChart.data.datasets[0].data   = netSpeedHist.down;
+    netChart.data.datasets[1].data   = netSpeedHist.up;
+    netChart.update('none');
+  }
+}
+
+function netRenderConns() {
+  const q   = (document.getElementById('net-conn-search')?.value || '').toLowerCase();
+  const st  = document.getElementById('net-conn-status')?.value || '';
+  let list  = [...netConnsData];
+  if (q)  list = list.filter(c => c.laddr.includes(q) || c.raddr.includes(q));
+  if (st) list = list.filter(c => c.status === st);
+  const tbody = document.getElementById('net-conn-tbody');
+  const empty = document.getElementById('net-conn-empty');
+  if (!list.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = list.map(c => {
+    const badgeCls = 'status-' + c.status;
+    return `<tr>
+      <td style="padding:6px 14px;font-size:.72rem;font-family:monospace;color:var(--muted2)">${c.type}</td>
+      <td style="padding:6px 14px;font-size:.72rem;font-family:monospace">${c.laddr || '—'}</td>
+      <td style="padding:6px 14px;font-size:.72rem;font-family:monospace;color:var(--muted2)">${c.raddr || '—'}</td>
+      <td style="padding:6px 14px"><span class="status-badge ${badgeCls}">${c.status}</span></td>
+      <td style="padding:6px 14px;font-size:.72rem;color:var(--muted)">${c.pid || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// APPS
+// ══════════════════════════════════════════════════════════════════════
+let apData = null;
+
+async function apLoad() {
+  document.getElementById('ap-idle').style.display    = 'none';
+  document.getElementById('ap-empty').style.display   = 'none';
+  document.getElementById('ap-loading').style.display = '';
+  document.getElementById('ap-tbody').innerHTML        = '';
+  document.getElementById('ap-btn-reload').disabled    = true;
+  try {
+    const res = await fetch('/api/apps');
+    apData = await res.json();
+    apRender();
+  } catch(e) {
+    document.getElementById('ap-idle').style.display = '';
+    document.getElementById('ap-idle').innerHTML = `<span style="color:var(--red)">Erro ao carregar: ${e}</span>`;
+  }
+  document.getElementById('ap-loading').style.display = 'none';
+  document.getElementById('ap-btn-reload').disabled    = false;
+}
+
+function apRender() {
+  if (!apData) return;
+  const q       = document.getElementById('ap-search').value.toLowerCase();
+  const runFilt = document.getElementById('ap-filter-run').value;
+  const sort    = document.getElementById('ap-sort').value;
+
+  let list = [...apData];
+  if (q)          list = list.filter(a => a.name.toLowerCase().includes(q) || a.publisher.toLowerCase().includes(q));
+  if (runFilt === 'running') list = list.filter(a => a.running);
+  if (runFilt === 'stopped') list = list.filter(a => !a.running);
+
+  list.sort((a, b) => {
+    if (sort === 'name')       return a.name.localeCompare(b.name);
+    if (sort === 'size-desc')  return b.size_mb - a.size_mb;
+    if (sort === 'size-asc')   return a.size_mb - b.size_mb;
+    if (sort === 'date-desc')  return (b.install_date||'').localeCompare(a.install_date||'');
+    if (sort === 'date-asc')   return (a.install_date||'').localeCompare(b.install_date||'');
+    if (sort === 'used-desc')  return (b.last_used||'').localeCompare(a.last_used||'');
+    return 0;
+  });
+
+  // stats
+  const totalSize  = apData.reduce((s, a) => s + a.size_mb, 0);
+  const runCount   = apData.filter(a => a.running).length;
+  document.getElementById('ap-total').textContent        = apData.length;
+  document.getElementById('ap-running-count').textContent = runCount;
+  document.getElementById('ap-total-size').textContent   = fmtSizeStr(totalSize * 1024 * 1024);
+  document.getElementById('ap-visible').textContent      = list.length;
+
+  const empty = document.getElementById('ap-empty');
+  const tbody = document.getElementById('ap-tbody');
+  document.getElementById('ap-idle').style.display = 'none';
+
+  if (!list.length) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const maxSize = Math.max(...list.map(a => a.size_mb), 1);
+
+  tbody.innerHTML = list.map(a => {
+    const barW    = Math.max(2, Math.round(a.size_mb / maxSize * 80));
+    const barClr  = a.size_mb > 2048 ? 'var(--red)' : a.size_mb > 512 ? 'var(--yellow)' : 'var(--accent)';
+    const sizeStr = a.size_mb > 0 ? fmtSizeStr(a.size_mb * 1024 * 1024) : '—';
+    const badge   = a.running
+      ? `<span class="ap-badge running">● Em execução${a.mem_mb > 0 ? ' · ' + a.mem_mb + ' MB RAM' : ''}</span>`
+      : `<span class="ap-badge stopped">Parado</span>`;
+    const instDate = a.install_date
+      ? (a.install_date.length === 8
+          ? a.install_date.slice(0,4)+'-'+a.install_date.slice(4,6)+'-'+a.install_date.slice(6,8)
+          : a.install_date)
+      : '—';
+    return `<tr>
+      <td style="padding:8px 14px">
+        <div style="font-size:.82rem;font-weight:500">${a.name}</div>
+        ${a.publisher ? `<div style="font-size:.68rem;color:var(--muted);margin-top:1px">${a.publisher}</div>` : ''}
+        ${a.version   ? `<div style="font-size:.65rem;color:var(--muted2);margin-top:1px">v${a.version}</div>` : ''}
+      </td>
+      <td style="padding:8px 14px;white-space:nowrap">
+        <div style="font-size:.78rem;font-weight:600">${sizeStr}</div>
+        ${a.size_mb > 0 ? `<div class="ap-size-bar"><div class="ap-size-fill" style="width:${barW}%;background:${barClr}"></div></div>` : ''}
+      </td>
+      <td style="padding:8px 14px;font-size:.74rem;color:var(--muted2);white-space:nowrap">${instDate}</td>
+      <td style="padding:8px 14px;font-size:.74rem;color:var(--muted2);white-space:nowrap">${a.last_used || '—'}</td>
+      <td style="padding:8px 14px;white-space:nowrap">${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function cleanerExecute() {
+  document.getElementById('cl-modal').style.display = 'none';
+  const selected = cleanerSelected();
+  document.getElementById('cl-btn-clean').disabled = true;
+  document.getElementById('cl-scan-state').innerHTML =
+    '<div class="cl-scanning"><span class="cl-scanning-dot">⟳</span><br><br>Limpando...</div>';
+  document.getElementById('cl-categories').style.display = 'none';
+
+  try {
+    const res  = await fetch('/api/cleaner/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: selected })
+    });
+    const data = await res.json();
+    document.getElementById('cl-scan-state').innerHTML = '';
+    const errHtml = data.errors?.length
+      ? `<div style="margin-top:12px;font-size:.72rem;color:var(--muted)">${data.errors.length} arquivo(s) sem permissão de acesso foram ignorados.</div>`
+      : '';
+    document.getElementById('cl-result').innerHTML = `
+      <div class="cl-result-freed">${data.freed_val} <span style="font-size:1.2rem">${data.freed_unit}</span></div>
+      <div class="cl-result-sub" style="margin-top:8px">liberados com sucesso</div>
+      <div class="cl-result-sub">${data.deleted} arquivo${data.deleted!==1?'s':''} removido${data.deleted!==1?'s':''}</div>
+      ${errHtml}
+      <button class="btn btn-ghost" onclick="cleanerScan()" style="margin-top:16px">🔍 Escanear novamente</button>`;
+    document.getElementById('cl-result').style.display = '';
+  } catch(e) {
+    document.getElementById('cl-scan-state').innerHTML =
+      `<div class="cl-idle-msg" style="color:var(--red)">Erro ao limpar: ${e}</div>`;
+  }
+  document.getElementById('cl-btn-clean').disabled = false;
+}
+</script>
+</body>
+</html>
