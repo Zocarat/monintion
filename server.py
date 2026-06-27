@@ -691,6 +691,8 @@ def api_portscan():
     if p_to < p_from: p_from, p_to = p_to, p_from
     if p_to - p_from > 9999:
         return jsonify({"error": "Máximo de 10 000 portas por varredura"}), 400
+    if not _is_private_host(host) and not os.environ.get("MONINTION_ALLOW_EXTERNAL_SCAN"):
+        return jsonify({"error": f"Host '{host}' não é privado. Apenas IPs RFC 1918 e Tailscale (100.64/10) são permitidos. Para habilitar hosts externos, defina MONINTION_ALLOW_EXTERNAL_SCAN=1."}), 403
 
     ports   = list(range(p_from, p_to + 1))
     open_ports = []
@@ -839,9 +841,34 @@ def api_apps():
 # ── remote SSH ───────────────────────────────────────────────────────────────
 
 import uuid
-import paramiko
+import ipaddress
 
-_ssh_sessions = {}  # sid -> {client, host, port, user, connected_at}
+_ssh_sessions    = {}  # sid -> {client, host, port, user, connected_at}
+_KNOWN_HOSTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "monintion_known_hosts")
+
+# Private + CGNAT ranges allowed for port scanner (RFC 1918 + Tailscale 100.64/10)
+_PRIVATE_NETS = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("100.64.0.0/10"),  # CGNAT / Tailscale
+    ipaddress.ip_network("169.254.0.0/16"),
+]
+
+def _is_private_host(host):
+    try:
+        addr = ipaddress.ip_address(socket.gethostbyname(host))
+        return any(addr in net for net in _PRIVATE_NETS)
+    except Exception:
+        return False
+
+def _get_paramiko():
+    try:
+        import paramiko as _pm
+        return _pm
+    except ImportError:
+        return None
 
 def _sess_exec(client, cmd, timeout=30):
     """Run command, return (stdout, stderr, exit_code)."""
@@ -860,6 +887,10 @@ def remote_sessions():
 
 @app.route("/api/remote/connect", methods=["POST"])
 def remote_connect():
+    paramiko = _get_paramiko()
+    if not paramiko:
+        return jsonify({"ok": False, "error": "paramiko não instalado neste host. Execute: pip install paramiko"}), 500
+
     d    = request.get_json(force=True)
     host = d.get("host","").strip()
     port = int(d.get("port", 22))
@@ -869,8 +900,21 @@ def remote_connect():
     if not host or not user:
         return jsonify({"ok": False, "error": "Host e usuário são obrigatórios"}), 400
 
+    # TOFU: trust on first use — saves key locally, rejects if key changes later
+    class _TOFUPolicy(paramiko.MissingHostKeyPolicy):
+        def missing_host_key(self, client, hostname, key):
+            client.get_host_keys().add(hostname, key.get_name(), key)
+            try:
+                client.get_host_keys().save(_KNOWN_HOSTS_FILE)
+            except Exception:
+                pass
+
     client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        client.load_host_keys(_KNOWN_HOSTS_FILE)
+    except FileNotFoundError:
+        pass
+    client.set_missing_host_key_policy(_TOFUPolicy())
     try:
         if key:
             client.connect(host, port=port, username=user, key_filename=os.path.expanduser(key), timeout=10)
@@ -929,12 +973,6 @@ def remote_monintion_status():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
 
-_DEPLOY_STEPS = [
-    ("Verificando Python 3…",      "python3 --version"),
-    ("Instalando Flask e psutil…", "pip3 install flask psutil --quiet 2>&1 | tail -3"),
-    ("Parando instância anterior…","pkill -f 'python3 server.py' 2>/dev/null; sleep 1; echo ok"),
-]
-
 @app.route("/api/remote/deploy", methods=["POST"])
 def remote_deploy():
     d   = request.get_json(force=True)
@@ -946,51 +984,69 @@ def remote_deploy():
     client = s["client"]
     log    = []
 
+    def run(label, cmd, timeout=90, allow_fail=False):
+        log.append(f"[…] {label}")
+        out, err, rc = _sess_exec(client, cmd, timeout=timeout)
+        if out.strip(): log.append(out.strip()[:500])
+        if err.strip(): log.append("[stderr] " + err.strip()[:300])
+        if rc not in (0, None) and not allow_fail:
+            raise RuntimeError(f"{label} falhou (rc={rc})")
+        return out, err, rc
+
     try:
-        # home dir
         home, _, _ = _sess_exec(client, "echo $HOME", timeout=5)
         home = home.strip() or "/root"
         deploy_dir = f"{home}/monintion"
+        venv_dir   = f"{deploy_dir}/venv"
         log.append(f"[info] Diretório: {deploy_dir}")
 
-        # run pre-steps
-        for label, cmd in _DEPLOY_STEPS:
-            log.append(f"[…] {label}")
-            out, err, rc = _sess_exec(client, cmd, timeout=90)
-            if out.strip(): log.append(out.strip())
-            if err.strip(): log.append("[stderr] " + err.strip()[:300])
-            if rc not in (0, None) and "pkill" not in cmd:
-                return jsonify({"ok": False, "error": f"Falhou: {label}", "log": "\n".join(log)})
+        run("Verificando Python 3…", "python3 --version")
 
-        # mkdir
+        # stop previous instance
+        _sess_exec(client, "pkill -f 'python.*server.py' 2>/dev/null; true", timeout=5)
+
+        # create venv (avoids PEP 668 externally-managed-env block)
+        run("Criando virtualenv…",
+            f"python3 -m venv {venv_dir} --system-site-packages 2>&1 || python3 -m venv {venv_dir}")
+
+        run("Instalando Flask e psutil no venv…",
+            f"{venv_dir}/bin/pip install flask psutil --quiet 2>&1 | tail -5")
+
+        # mkdir + sftp upload
         _sess_exec(client, f"mkdir -p {deploy_dir}/templates", timeout=5)
         log.append("[…] Enviando arquivos via SFTP…")
-
         sftp = client.open_sftp()
         here = os.path.dirname(os.path.abspath(__file__))
-        files_to_send = [
-            (os.path.join(here, "server.py"),             f"{deploy_dir}/server.py"),
-            (os.path.join(here, "db.py"),                 f"{deploy_dir}/db.py"),
-            (os.path.join(here, "requirements.txt"),      f"{deploy_dir}/requirements.txt"),
-            (os.path.join(here, "templates", "index.html"), f"{deploy_dir}/templates/index.html"),
-        ]
-        for src, dst in files_to_send:
+        for src, dst in [
+            (os.path.join(here, "server.py"),               f"{deploy_dir}/server.py"),
+            (os.path.join(here, "db.py"),                   f"{deploy_dir}/db.py"),
+            (os.path.join(here, "requirements.txt"),        f"{deploy_dir}/requirements.txt"),
+            (os.path.join(here, "templates","index.html"),  f"{deploy_dir}/templates/index.html"),
+        ]:
             if os.path.exists(src):
                 sftp.put(src, dst)
                 log.append(f"[upload] {os.path.basename(src)} ✓")
         sftp.close()
 
-        # start
+        # start with venv python — fire-and-forget, do NOT read output (avoids channel block)
         log.append("[…] Iniciando servidor remoto…")
-        start_cmd = f"cd {deploy_dir} && nohup python3 server.py > monintion.log 2>&1 &"
-        _sess_exec(client, start_cmd, timeout=5)
+        start_cmd = (
+            f"cd {deploy_dir} && "
+            f"nohup {venv_dir}/bin/python server.py > monintion.log 2>&1 & "
+            f"echo LAUNCHED"
+        )
+        client.exec_command(start_cmd)   # intentionally not reading stdout/stderr
 
-        # verify after 3s
-        import time as _t; _t.sleep(3)
-        chk, _, _ = _sess_exec(client, "pgrep -fa 'python.*server.py' 2>/dev/null | head -1 || echo NOT_RUNNING", timeout=5)
+        time.sleep(4)
+
+        chk, _, _ = _sess_exec(client,
+            "pgrep -fa 'python.*server.py' 2>/dev/null | head -1 || echo NOT_RUNNING",
+            timeout=8)
         if "NOT_RUNNING" in chk:
-            log_tail, _, _ = _sess_exec(client, f"tail -10 {deploy_dir}/monintion.log 2>/dev/null || echo sem log", timeout=5)
-            log.append("[warn] Processo não detectado. Log:\n" + log_tail)
+            tail, _, _ = _sess_exec(client,
+                f"tail -20 {deploy_dir}/monintion.log 2>/dev/null || echo sem log",
+                timeout=8)
+            log.append("[warn] Processo não detectado. Log:\n" + tail)
             return jsonify({"ok": False, "log": "\n".join(log), "error": "Servidor não iniciou"})
 
         log.append("[ok] MONINTION rodando na porta 5050 ✓")
