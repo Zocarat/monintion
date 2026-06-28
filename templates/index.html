@@ -317,6 +317,36 @@ tr:hover td{background:#ffffff06}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+/* ── THREAT ANALYSIS ── */
+.th-setup{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.th-setup select{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:7px 10px;border-radius:8px;font-size:.8rem;min-width:260px}
+.th-setup-msg{font-size:.78rem;color:var(--muted);margin-left:4px}
+.th-main-grid{display:grid;grid-template-columns:2fr 1.4fr 1fr;gap:14px;margin-bottom:14px}
+.th-topo{min-height:300px}
+.th-svg-wrap{background:var(--bg);border-radius:8px;overflow:hidden}
+.th-svg-wrap svg{width:100%;height:auto;display:block}
+.th-legend{display:flex;gap:14px;margin-top:10px;font-size:.7rem;color:var(--muted)}
+.th-legend span{display:flex;align-items:center;gap:5px}
+.th-legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.th-events-wrap{height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.th-event{display:grid;grid-template-columns:52px 44px 1fr;gap:7px;align-items:start;
+  padding:5px 0;border-bottom:1px solid var(--border)22;font-size:.74rem}
+.th-ts{color:var(--muted);font-variant-numeric:tabular-nums;padding-top:1px}
+.th-sev{text-align:center;padding:1px 0;border-radius:4px;font-size:.65rem;font-weight:700;letter-spacing:.5px}
+.th-msg{color:var(--text);line-height:1.4}
+.th-right{display:flex;flex-direction:column;gap:14px}
+.th-vector{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
+  margin-bottom:8px;font-size:.76rem}
+.th-vector-label{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th-vector-bar-wrap{width:80px;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.th-vector-bar{height:100%;border-radius:3px;transition:width .5s ease}
+.th-vector-count{color:var(--muted2);min-width:22px;text-align:right;font-weight:600}
+.th-level-BAIXO{color:#22c55e}.th-level-MÉDIO{color:#f59e0b}
+.th-level-ALTO{color:#ef4444}.th-level-CRÍTICO{color:#ef4444;animation:pulse 1s infinite}
+.pill-red b{color:#ef4444}.pill-green b{color:#22c55e}
+@keyframes atk-dash{to{stroke-dashoffset:-20}}
 </style>
 </head>
 <body>
@@ -339,6 +369,8 @@ tr:hover td{background:#ffffff06}
     <div class="nav-item" onclick="goto('network')"><span class="nav-icon">🌐</span>Redes</div>
     <div class="nav-item" onclick="goto('sysinfo')"><span class="nav-icon">🖥️</span>Info do Sistema</div>
     <div class="nav-item" onclick="goto('remote')"><span class="nav-icon">🔗</span>Acesso Remoto</div>
+    <div class="nav-section">Segurança</div>
+    <div class="nav-item" onclick="goto('threats')" style="color:var(--red)"><span class="nav-icon">⚠</span>Análise de Ameaças</div>
   </nav>
   <div id="sidebar-status"><span class="status-dot"></span><span id="last-update">Conectando...</span></div>
 </aside>
@@ -355,6 +387,8 @@ tr:hover td{background:#ffffff06}
       <div class="pill">RAM <b id="tp-ram">—</b></div>
       <div class="pill">Uptime <b id="tp-up">—</b></div>
       <div class="pill">Processos <b id="tp-proc">—</b></div>
+      <div class="pill pill-red" id="tp-pill-threats" style="display:none">Ameaças <b id="tp-threats">0</b></div>
+      <div class="pill pill-green" id="tp-pill-blocked" style="display:none">Bloqueios <b id="tp-blocked">0</b></div>
     </div>
   </div>
   <div id="content">
@@ -867,6 +901,86 @@ tr:hover td{background:#ffffff06}
 
     </div>
 
+    <!-- ════ THREATS ════ -->
+    <div id="page-threats" class="page">
+
+      <!-- project selector -->
+      <div class="th-setup">
+        <select id="th-proj-sel" onchange="thLoadProject()"><option value="">— carregando projetos GNS3 —</option></select>
+        <button class="btn btn-ghost" onclick="thReset()">↺ Resetar simulação</button>
+        <span class="th-setup-msg" id="th-setup-msg"></span>
+      </div>
+
+      <!-- 4 summary cards -->
+      <div class="metrics-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="metric-card yellow" id="th-card-threats">
+          <div class="mc-label">⚠ Ameaças Detectadas</div>
+          <div class="mc-value">—</div><div class="mc-sub">aguardando dados…</div>
+        </div>
+        <div class="metric-card green" id="th-card-blocked">
+          <div class="mc-label">🛡 Ataques Bloqueados</div>
+          <div class="mc-value">—</div><div class="mc-sub">—</div>
+        </div>
+        <div class="metric-card red" id="th-card-hosts">
+          <div class="mc-label">🎯 Hosts sob Ataque</div>
+          <div class="mc-value">—</div><div class="mc-sub">—</div>
+        </div>
+        <div class="metric-card red" id="th-card-level">
+          <div class="mc-label">🔴 Nível de Ameaça</div>
+          <div class="mc-value" style="font-size:1.3rem">—</div><div class="mc-sub">—</div>
+        </div>
+      </div>
+
+      <!-- main grid: topology | events | vectors+origin -->
+      <div class="th-main-grid">
+
+        <div class="chart-card th-topo">
+          <h3>Topologia da Rede &bull; <span id="th-topo-label" style="color:var(--accent);text-transform:none;font-size:.8rem">nenhum projeto</span>
+            <span style="float:right;color:var(--green);font-size:.7rem">● ao vivo</span>
+          </h3>
+          <div class="th-svg-wrap">
+            <svg id="th-svg" viewBox="0 0 700 280" style="min-height:200px">
+              <text x="350" y="145" text-anchor="middle" fill="#5a7090" font-size="13">Selecione um projeto GNS3 acima</text>
+            </svg>
+          </div>
+          <div class="th-legend">
+            <span><span class="dot" style="background:#22c55e"></span>saudável</span>
+            <span><span class="dot" style="background:#f59e0b"></span>sob varredura</span>
+            <span><span class="dot" style="background:#ef4444"></span>comprometido</span>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h3>Eventos de Segurança &bull; Ao Vivo
+            <span style="float:right;color:var(--green);font-size:.7rem">► stream</span>
+          </h3>
+          <div class="th-events-wrap" id="th-event-feed">
+            <div style="color:var(--muted);font-size:.8rem;padding:20px 0;text-align:center">aguardando eventos…</div>
+          </div>
+        </div>
+
+        <div class="th-right">
+          <div class="chart-card" style="flex:1">
+            <h3>Vetores de Ataque <span style="color:var(--muted);font-size:.65rem;text-transform:none">1h</span></h3>
+            <div id="th-vectors"><div style="color:var(--muted);font-size:.78rem">aguardando…</div></div>
+          </div>
+          <div class="chart-card">
+            <h3>Origem das Ameaças</h3>
+            <canvas id="th-origin-chart" height="160"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="chart-card">
+        <h3>Ataques por Minuto &bull; Última Hora
+          <span id="th-permin-peak" style="float:right;color:var(--yellow);font-size:.7rem;text-transform:none"></span>
+        </h3>
+        <canvas id="th-permin-chart" height="70"></canvas>
+      </div>
+
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -889,7 +1003,7 @@ function sliderToBytes(v){return Math.pow(v/100,3)*1024*1024*1024}
 // ══════════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════════════════════════════
-const PAGE_TITLES={'overview':'Visão Geral','history':'Histórico','files':'Explorador de Arquivos','cleaner':'Limpeza do Sistema','apps':'Aplicativos Instalados','network':'Redes & Conexões','sysinfo':'Informações do Sistema','remote':'Acesso Remoto SSH'};
+const PAGE_TITLES={'overview':'Visão Geral','history':'Histórico','files':'Explorador de Arquivos','cleaner':'Limpeza do Sistema','apps':'Aplicativos Instalados','network':'Redes & Conexões','sysinfo':'Informações do Sistema','remote':'Acesso Remoto SSH','threats':'Análise de Ameaças'};
 
 function goto(name){
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
@@ -904,6 +1018,10 @@ function goto(name){
   if(name==='network') netStart();
   if(name!=='network') netStop();
   if(name==='remote') rmInit();
+  if(name==='threats'){ thStart(); document.getElementById('tp-pill-threats').style.display='';document.getElementById('tp-pill-blocked').style.display=''; }
+  if(name!=='threats') thStop();
+  const sub={'overview':'Sistema • Ao vivo','history':'Histórico • SQLite','files':'Explorador de Arquivos','cleaner':'Limpeza do Sistema','apps':'Aplicativos Instalados','network':'Redes & Conexões','sysinfo':'Informações do Sistema','remote':'SSH Remote Manager','threats':'Simulação ativa • Laboratório GNS3'};
+  document.getElementById('topbar-sub').textContent=sub[name]||'';
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -2366,6 +2484,213 @@ async function cleanerExecute() {
       `<div class="cl-idle-msg" style="color:var(--red)">Erro ao limpar: ${e}</div>`;
   }
   document.getElementById('cl-btn-clean').disabled = false;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// THREAT ANALYSIS
+// ══════════════════════════════════════════════════════════════════════
+let thNodes=[], thLinks=[], thNodeStatus={}, thOriginChart=null, thPerMinChart=null, thTimer=null;
+const TH_SEV_CLR={CRIT:'#ef4444',ALTO:'#f59e0b','MÉD':'#4f9eff',INFO:'#22c55e'};
+
+async function thStart(){
+  if(thTimer) return;
+  await thInitProjects();
+  thTick();
+  thTimer=setInterval(thTick,3000);
+}
+function thStop(){if(thTimer){clearInterval(thTimer);thTimer=null;}}
+
+async function thInitProjects(){
+  const sel=document.getElementById('th-proj-sel');
+  const msg=document.getElementById('th-setup-msg');
+  try{
+    const data=await fetch('/api/gns3/projects').then(r=>r.json());
+    if(data.error){msg.textContent='GNS3 offline — '+data.hint;return;}
+    sel.innerHTML='<option value="">— selecione um projeto —</option>';
+    (Array.isArray(data)?data:[]).forEach(p=>{
+      sel.innerHTML+=`<option value="${p.project_id}">${p.name} (${p.status||'?'})</option>`;
+    });
+    msg.textContent=`${Array.isArray(data)?data.length:0} projeto(s) encontrado(s)`;
+  } catch(e){ msg.textContent='GNS3 não acessível em localhost:3080'; }
+}
+
+async function thLoadProject(){
+  const sel=document.getElementById('th-proj-sel');
+  const pid=sel.value;
+  if(!pid) return;
+  const msg=document.getElementById('th-setup-msg');
+  msg.textContent='Carregando topologia…';
+  try{
+    const data=await fetch(`/api/gns3/topology?project_id=${pid}`).then(r=>r.json());
+    if(data.error){msg.textContent='Erro: '+data.error;return;}
+    thNodes=data.nodes||[];
+    thLinks=data.links||[];
+    await fetch('/api/threats/nodes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(thNodes)});
+    document.getElementById('th-topo-label').textContent=sel.options[sel.selectedIndex].text;
+    msg.textContent=`${thNodes.length} nós · ${thLinks.length} links`;
+    thRenderTopology();
+  } catch(e){ msg.textContent='Erro ao carregar: '+e; }
+}
+
+function thRenderTopology(){
+  const svg=document.getElementById('th-svg');
+  if(!thNodes.length){
+    svg.innerHTML='<text x="350" y="145" text-anchor="middle" fill="#5a7090" font-size="13">Nenhuma topologia carregada</text>';
+    return;
+  }
+  const xs=thNodes.map(n=>n.x||0), ys=thNodes.map(n=>n.y||0);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const W=660,H=260,PAD=50;
+  const sx=maxX>minX?(W-2*PAD)/(maxX-minX):1;
+  const sy=maxY>minY?(H-2*PAD)/(maxY-minY):1;
+  const sc=Math.min(sx,sy);
+  const offX=PAD+(W-2*PAD-(maxX-minX)*sc)/2;
+  const offY=PAD+(H-2*PAD-(maxY-minY)*sc)/2;
+  const pos={};
+  thNodes.forEach(n=>{pos[n.node_id]={x:offX+(n.x-minX)*sc, y:offY+(n.y-minY)*sc, ...n};});
+
+  let out='';
+  // links
+  thLinks.forEach(lk=>{
+    const a=pos[lk.nodes[0]?.node_id], b=pos[lk.nodes[1]?.node_id];
+    if(!a||!b) return;
+    const atker=thNodes.find(n=>n._role==='attacker');
+    const isAtk=atker&&(lk.nodes[0]?.node_id===atker.node_id||lk.nodes[1]?.node_id===atker.node_id);
+    if(isAtk)
+      out+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#ef444466" stroke-width="2" stroke-dasharray="8,4"><animate attributeName="stroke-dashoffset" from="0" to="-24" dur="0.8s" repeatCount="indefinite"/></line>`;
+    else
+      out+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#1e2d45" stroke-width="1.5"/>`;
+  });
+  // nodes
+  thNodes.forEach(n=>{
+    const p=pos[n.node_id];
+    const st=thNodeStatus[n.name]||'healthy';
+    const clr=st==='compromised'?'#ef4444':st==='scanning'?'#f59e0b':'#22c55e';
+    const role=n._role||'unknown';
+    const lbl=n.name.length>13?n.name.slice(0,11)+'…':n.name;
+    const sub=st==='compromised'?'INVADIDA':st==='scanning'?'sob varredura':'';
+    if(role==='internet'){
+      out+=`<ellipse cx="${p.x}" cy="${p.y}" rx="30" ry="18" fill="#0d121c" stroke="#5a7090" stroke-width="1.5"/>`;
+      out+=`<text x="${p.x}" y="${p.y-4}" text-anchor="middle" fill="#8ba3c4" font-size="9">☁</text>`;
+      out+=`<text x="${p.x}" y="${p.y+7}" text-anchor="middle" fill="#8ba3c4" font-size="8">${lbl}</text>`;
+    } else {
+      const bg=role==='attacker'?'#2a0a0a':'#0d121c';
+      const brd=role==='attacker'?'#ef4444':clr;
+      out+=`<rect x="${p.x-42}" y="${p.y-18}" width="84" height="36" rx="7" fill="${bg}" stroke="${brd}" stroke-width="${role==='attacker'?2:1.5}"/>`;
+      const icon=role==='attacker'?'⚡':role==='router'?'⚙':role==='switch'?'≡':'□';
+      out+=`<text x="${p.x}" y="${p.y-4}" text-anchor="middle" fill="${brd}" font-size="8.5" font-weight="600">${icon} ${lbl}</text>`;
+      if(sub) out+=`<text x="${p.x}" y="${p.y+10}" text-anchor="middle" fill="${clr}" font-size="7.5">${sub}</text>`;
+    }
+    out+=`<circle cx="${p.x+36}" cy="${p.y-15}" r="4" fill="${clr}"/>`;
+  });
+  svg.innerHTML=out;
+}
+
+async function thTick(){
+  try{
+    const [evts,sum]=await Promise.all([
+      fetch('/api/threats/events?limit=50').then(r=>r.json()),
+      fetch('/api/threats/summary').then(r=>r.json()),
+    ]);
+    thUpdateCards(sum);
+    thUpdateFeed(evts);
+    thUpdateVectors(sum.vectors);
+    thUpdateOrigin(sum.origin);
+    thUpdatePerMin(sum.per_min);
+    thNodeStatus=sum.node_status||{};
+    if(thNodes.length) thRenderTopology();
+    document.getElementById('tp-threats').textContent=sum.threats;
+    document.getElementById('tp-blocked').textContent=sum.blocked;
+  } catch(e){}
+}
+
+function thUpdateCards(s){
+  const lclr={BAIXO:'#22c55e',MÉDIO:'#f59e0b',ALTO:'#ef4444',CRÍTICO:'#ef4444'}[s.level]||'#ef4444';
+  const comp=(s.compromised||[]).length, scan=(s.scanning||[]).length;
+  const hostLbl=s.compromised?.[0]||s.scanning?.[0]||'Nenhum';
+  const hostSt=comp?'ATIVO':scan?'ALERTA':'—';
+  document.getElementById('th-card-threats').innerHTML=`
+    <div class="mc-label">⚠ Ameaças Detectadas <span style="float:right;color:var(--muted)">${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>
+    <div class="mc-value" style="color:#f59e0b">${s.threats}</div>
+    <div class="mc-sub" style="color:#f59e0b">↑ acumulado desde início</div>`;
+  document.getElementById('th-card-blocked').innerHTML=`
+    <div class="mc-label">🛡 Ataques Bloqueados <span style="float:right;color:var(--green)">OK</span></div>
+    <div class="mc-value" style="color:#22c55e">${s.blocked}</div>
+    <div class="mc-sub">${s.block_pct}% de taxa de bloqueio</div>`;
+  document.getElementById('th-card-hosts').innerHTML=`
+    <div class="mc-label">🎯 Hosts sob Ataque <span style="float:right;color:${comp?'#ef4444':'var(--muted)'}">${hostSt}</span></div>
+    <div class="mc-value" style="color:#ef4444">${comp+scan||0}</div>
+    <div class="mc-sub" style="color:#ef4444">${hostLbl}</div>`;
+  document.getElementById('th-card-level').innerHTML=`
+    <div class="mc-label">🔴 Nível de Ameaça</div>
+    <div class="mc-value th-level-${s.level}" style="font-size:1.3rem">${s.level}</div>
+    <div class="mc-sub">${{BAIXO:'Atividade normal',MÉDIO:'Recon detectado',ALTO:'Brute-force em curso',CRÍTICO:'Hosts comprometidos'}[s.level]||''}</div>`;
+}
+
+function thUpdateFeed(evts){
+  if(!evts.length) return;
+  document.getElementById('th-event-feed').innerHTML=evts.map(e=>`
+    <div class="th-event">
+      <span class="th-ts">${e.ts}</span>
+      <span class="th-sev" style="background:${TH_SEV_CLR[e.sev]}22;color:${TH_SEV_CLR[e.sev]}">${e.sev}</span>
+      <span class="th-msg">${e.msg}</span>
+    </div>`).join('');
+}
+
+function thUpdateVectors(vecs){
+  if(!vecs?.length){document.getElementById('th-vectors').innerHTML='<div style="color:var(--muted);font-size:.78rem">aguardando…</div>';return;}
+  const max=vecs[0].count||1;
+  document.getElementById('th-vectors').innerHTML=vecs.map(v=>`
+    <div class="th-vector">
+      <div class="th-vector-label">${v.name}</div>
+      <div class="th-vector-bar-wrap"><div class="th-vector-bar" style="width:${Math.round(v.count/max*100)}%;background:${v.count===max?'#ef4444':'#4f9eff'}"></div></div>
+      <span class="th-vector-count">${v.count}</span>
+    </div>`).join('');
+}
+
+function thUpdateOrigin(origin){
+  if(!origin?.length) return;
+  if(!thOriginChart){
+    const ctx=document.getElementById('th-origin-chart').getContext('2d');
+    thOriginChart=new Chart(ctx,{
+      type:'doughnut',
+      data:{labels:origin.map(o=>o.label),datasets:[{data:origin.map(o=>o.pct),
+        backgroundColor:['#ef4444','#f59e0b','#4f9eff','#22c55e'],borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,animation:false,plugins:{legend:{position:'bottom',labels:{color:'#8ba3c4',font:{size:10},boxWidth:10}}},cutout:'60%'}
+    });
+  }
+}
+
+function thUpdatePerMin(perMin){
+  const peak=Math.max(...perMin);
+  const peakIdx=perMin.lastIndexOf(peak);
+  if(peak>0) document.getElementById('th-permin-peak').textContent=`pico em -${59-peakIdx}min · ${peak} eventos`;
+  const colors=perMin.map(v=>v>10?'#ef4444':v>5?'#f59e0b':'#4f9eff');
+  if(!thPerMinChart){
+    const ctx=document.getElementById('th-permin-chart').getContext('2d');
+    thPerMinChart=new Chart(ctx,{
+      type:'bar',
+      data:{labels:Array.from({length:60},(_,i)=>i===59?'agora':''),
+            datasets:[{data:perMin,backgroundColor:colors,borderWidth:0,borderRadius:2}]},
+      options:{responsive:true,animation:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} eventos`}}},
+        scales:{x:{display:false},y:{grid:{color:'#1e2d4533'},ticks:{color:'#5a7090',font:{size:9}}}}}
+    });
+  } else {
+    thPerMinChart.data.datasets[0].data=perMin;
+    thPerMinChart.data.datasets[0].backgroundColor=colors;
+    thPerMinChart.update('none');
+  }
+}
+
+async function thReset(){
+  await fetch('/api/threats/reset',{method:'POST'});
+  thOriginChart=null; thPerMinChart=null;
+  const oc=document.getElementById('th-origin-chart');
+  const pc=document.getElementById('th-permin-chart');
+  oc.replaceWith(oc.cloneNode()); pc.replaceWith(pc.cloneNode());
+  thTick();
+}
 }
 </script>
 </body>

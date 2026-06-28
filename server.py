@@ -1057,5 +1057,190 @@ def remote_deploy():
         return jsonify({"ok": False, "log": "\n".join(log), "error": str(e)})
 
 
+# ── GNS3 integration ─────────────────────────────────────────────────────────
+
+import urllib.request as _urlreq
+import collections
+
+GNS3_URL  = os.environ.get("GNS3_URL",  "http://localhost:3080/v2")
+GNS3_AUTH = os.environ.get("GNS3_AUTH", "")   # "user:pass" se autenticação ativa
+
+def _gns3(path, timeout=5):
+    import json as _json, base64 as _b64
+    req = _urlreq.Request(GNS3_URL + path)
+    if GNS3_AUTH:
+        req.add_header("Authorization", "Basic " + _b64.b64encode(GNS3_AUTH.encode()).decode())
+    with _urlreq.urlopen(req, timeout=timeout) as r:
+        return _json.loads(r.read().decode())
+
+def _node_role(name):
+    n = name.lower()
+    if "kali" in n:                                                               return "attacker"
+    if any(x in n for x in ("mikrotik","openwrt","cisco","routeros","vyos","pfsense","juniper")): return "router"
+    if "switch" in n:                                                             return "switch"
+    if any(x in n for x in ("vpc","pc","host","server","debian","ubuntu","win")): return "victim"
+    if any(x in n for x in ("nat","internet","cloud","wan")):                    return "internet"
+    return "unknown"
+
+@app.route("/api/gns3/projects")
+def api_gns3_projects():
+    try:
+        return jsonify(_gns3("/projects"))
+    except Exception as e:
+        return jsonify({"error": str(e), "hint": f"GNS3 rodando em {GNS3_URL}?"}), 503
+
+@app.route("/api/gns3/topology")
+def api_gns3_topology():
+    pid = request.args.get("project_id", "")
+    if not pid:
+        return jsonify({"error": "project_id obrigatório"}), 400
+    try:
+        nodes = _gns3(f"/projects/{pid}/nodes")
+        links = _gns3(f"/projects/{pid}/links")
+        for n in nodes:
+            n["_role"] = _node_role(n.get("name", ""))
+        return jsonify({"nodes": nodes, "links": links})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 503
+
+
+# ── Threat simulation engine ──────────────────────────────────────────────────
+
+import random as _rand
+
+class _ThreatEngine:
+    def __init__(self, buf=500):
+        self._lock   = threading.Lock()
+        self._buf    = collections.deque(maxlen=buf)
+        self._c      = {"threats": 0, "blocked": 0, "vectors": {},
+                        "per_min": collections.deque([0]*60, maxlen=60),
+                        "_tick": 0, "_min_ts": time.time()}
+        self._nodes  = []
+        self._status = {}   # name → healthy / scanning / compromised
+
+    def set_nodes(self, nodes):
+        with self._lock:
+            self._nodes = [{"name": n.get("name","?"), "role": n.get("_role","unknown")} for n in nodes]
+            self._status = {n["name"]: self._status.get(n["name"],"healthy") for n in self._nodes}
+
+    def _pick(self, role, fallback):
+        pool = [n["name"] for n in self._nodes if n["role"] == role]
+        return _rand.choice(pool) if pool else fallback
+
+    def generate(self):
+        atk   = self._pick("attacker", "Kali")
+        rtr   = self._pick("router",   "MikroTik")
+        vic   = self._pick("victim",   "VPC-A")
+        tgts  = [n["name"] for n in self._nodes if n["role"] in ("router","switch","victim")] or [rtr, vic]
+        tgt   = _rand.choice(tgts)
+        iface = _rand.choice(["ether1","ether2","ether3","eth0","e0","vlan10","vlan20"])
+        port  = _rand.choice([22,23,80,443,8291,8728,2000,3389])
+
+        T = [
+            ("CRIT", f"Brute-force SSH em {rtr}:{port} ({_rand.randint(3,20)} tent/s)",        "Brute-force SSH",      True),
+            ("ALTO", f"Port scan TCP/SYN → 192.168.{_rand.randint(1,5)}.0/24",                 "Port scan (Nmap)",     True),
+            ("INFO", f"Bloqueado: pacote ARP forjado em {iface}",                               "ARP spoofing",         True),
+            ("CRIT", f"Tentativa de login admin em {rtr} WebFig",                               "Web login (RouterOS)", True),
+            ("ALTO", f"DNS exfiltration suspeita (entropia {round(_rand.uniform(3.5,5.9),2)})", "DNS suspeito",         True),
+            ("INFO", f"Regra IDS-{_rand.randint(1000,9999)} atualizada • snort.local",         None,                   False),
+            ("MÉD",  f"Conexão saindo p/ host não-listado :{port}",                             "C2 suspeito",          True),
+            ("CRIT", f"Privilege escalation detectada • {vic}",                                 "Escalação",            True),
+            ("INFO", f"Snapshot do tráfego salvo • {_rand.randint(800,9999)} pkts",            None,                   False),
+            ("ALTO", f"Fingerprint Nmap • origem {atk} ({iface})",                              "Port scan (Nmap)",     True),
+            ("MÉD",  f"ICMP flood mitigado em {iface} (>{_rand.randint(150,999)} pps)",        "ICMP flood",           True),
+            ("INFO", "Baseline de tráfego recalculada",                                         None,                   False),
+            ("ALTO", f"ARP spoofing detectado: {atk} → {tgt}",                                 "ARP spoofing",         True),
+            ("CRIT", f"Exploit tentativa em {rtr} (CVE simulado)",                              "Exploração",           True),
+            ("MÉD",  f"Conexão suspeita {atk} → {vic}:{port}",                                "C2 suspeito",          True),
+        ]
+        pool = [t for t in T if t[0] != "INFO"] if _rand.random() > 0.3 else T
+        sev, msg, vec, is_atk = _rand.choice(pool)
+        blocked = is_atk and _rand.random() < 0.87
+
+        evt = {"ts": datetime.now().strftime("%H:%M:%S"), "sev": sev, "msg": msg,
+               "vector": vec, "blocked": blocked,
+               "attacker": atk if is_atk else None, "target": tgt if is_atk else None}
+
+        with self._lock:
+            self._buf.appendleft(evt)
+            c = self._c
+            c["threats"] += 1
+            c["blocked"] += int(blocked)
+            if vec: c["vectors"][vec] = c["vectors"].get(vec, 0) + 1
+            c["_tick"] += 1
+            if time.time() - c["_min_ts"] >= 60:
+                c["per_min"].append(c["_tick"])
+                c["_tick"] = 0
+                c["_min_ts"] = time.time()
+            if is_atk and tgt in self._status:
+                cur = self._status[tgt]
+                if cur == "healthy"   and _rand.random() < 0.25: self._status[tgt] = "scanning"
+                elif cur == "scanning" and sev == "CRIT" and _rand.random() < 0.15: self._status[tgt] = "compromised"
+        return evt
+
+    def events(self, limit=50):
+        with self._lock: return list(self._buf)[:limit]
+
+    def summary(self):
+        with self._lock:
+            c = self._c
+            compromised = [k for k,v in self._status.items() if v == "compromised"]
+            scanning    = [k for k,v in self._status.items() if v == "scanning"]
+            block_pct   = round(c["blocked"] / max(c["threats"], 1) * 100, 1)
+            level = "BAIXO"
+            if c["threats"] > 10: level = "MÉDIO"
+            if c["threats"] > 30: level = "ALTO"
+            if compromised:       level = "CRÍTICO"
+            vecs = sorted(c["vectors"].items(), key=lambda x: -x[1])
+            return {
+                "threats": c["threats"], "blocked": c["blocked"],
+                "block_pct": block_pct,  "level": level,
+                "compromised": compromised, "scanning": scanning,
+                "vectors": [{"name": k, "count": v} for k, v in vecs[:6]],
+                "per_min": list(c["per_min"]),
+                "node_status": dict(self._status),
+                "origin": [{"label":"Kali (atacante)","pct":62},{"label":"Router mgmt","pct":18},
+                           {"label":"NAT externo","pct":12},{"label":"Outros","pct":8}],
+            }
+
+    def reset(self):
+        with self._lock:
+            self._buf.clear()
+            self._c = {"threats":0,"blocked":0,"vectors":{},
+                       "per_min":collections.deque([0]*60,maxlen=60),
+                       "_tick":0,"_min_ts":time.time()}
+            for k in self._status: self._status[k] = "healthy"
+
+_engine = _ThreatEngine()
+
+def _threat_loop():
+    while True:
+        time.sleep(_rand.uniform(2.0, 5.0))
+        try: _engine.generate()
+        except Exception as e: print(f"[threats] {e}")
+
+threading.Thread(target=_threat_loop, daemon=True).start()
+
+@app.route("/api/threats/events")
+def api_threat_events():
+    limit = min(int(request.args.get("limit", 50)), 200)
+    return jsonify(_engine.events(limit))
+
+@app.route("/api/threats/summary")
+def api_threat_summary():
+    return jsonify(_engine.summary())
+
+@app.route("/api/threats/nodes", methods=["POST"])
+def api_threat_nodes():
+    nodes = request.get_json(force=True) or []
+    _engine.set_nodes(nodes)
+    return jsonify({"ok": True, "count": len(nodes)})
+
+@app.route("/api/threats/reset", methods=["POST"])
+def api_threat_reset():
+    _engine.reset()
+    return jsonify({"ok": True})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050, debug=False)
